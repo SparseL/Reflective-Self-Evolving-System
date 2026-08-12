@@ -1,0 +1,37 @@
+[
+  {
+    "generation_in": 49,
+    "generation_out": 50,
+    "operator": "t2",
+    "context_best": [
+      {
+        "unique_id": "ba8a03914304e9901ee94dcc6e75f13f",
+        "objective": 0.21997,
+        "operator": "e2"
+      },
+      {
+        "unique_id": "8985e65a3508cba954c1a004b3b409a7",
+        "objective": 0.22091,
+        "operator": "t2"
+      },
+      {
+        "unique_id": "4704735fd931c8c6d3219797d5132ee2",
+        "objective": 0.22128,
+        "operator": "e1"
+      }
+    ],
+    "offspring_unique_id": "6e4489aedc7528020be95d3b15fa462a",
+    "parents": [
+      "ba8a03914304e9901ee94dcc6e75f13f",
+      "8985e65a3508cba954c1a004b3b409a7",
+      "4704735fd931c8c6d3219797d5132ee2"
+    ],
+    "objective": 0.23903,
+    "time_select": 4.478745460510254,
+    "time_anc": 5.99882960319519,
+    "llm_raw_response": "Reflection: The small improvements involved better balancing of multiple node features like betweenness, clustering, core number diversity, and neighborhood fragility to improve early disruption without sacrificing final fragmentation. The primary failure was high time_select in the more complex scoring schemes, indicating some features added too much computational overhead for limited benefit. Algorithm 1 strikes a good balance between complexity and effectiveness but can be improved by reducing the per-node neighborhood scanning cost and stabilizing normalization steps.\n\nAlgorithm Description: {Select the next node by combining normalized betweenness centrality with an adaptive exponential penalty on clustering above the average and a precomputed neighborhood fragility score cached in node attributes, minimizing per-step neighborhood computations.}\n\nCode: \n```python\ndef select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    node_attrs = graph.nodes\n    pre = graph.graph.get('precomputed', {})\n    avg_clustering = pre.get('avg_clustering', 0.1)\n    max_core_k = pre.get('max_core_k', 1)\n    epsilon = 1e-9\n\n    unvisited_set = set(unvisited_nodes)\n\n    # Pre-extract attributes\n    betweenness = np.array([node_attrs[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([node_attrs[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    # Normalize betweenness with stable fallback\n    mn_b, mx_b = betweenness.min(), betweenness.max()\n    if abs(mx_b - mn_b) < epsilon:\n        bet_norm = np.ones_like(betweenness) * 0.5\n    else:\n        bet_norm = (betweenness - mn_b) / (mx_b - mn_b) + epsilon\n\n    # Clustering penalty: exponential decay for clustering above average\n    clustering_penalty = np.exp(-(clustering - avg_clustering))\n\n    # Use precomputed fragility if available; else approximate quickly from cached node attribute 'fragility'\n    # Assuming fragility precomputed as fraction of low core neighbors stored as node attribute, else default 0.5\n    fragility_scores = np.array([node_attrs[n].get('fragility', 0.5) for n in unvisited_nodes], dtype=float)\n    # Normalize fragility with stable fallback\n    mn_f, mx_f = fragility_scores.min(), fragility_scores.max()\n    if abs(mx_f - mn_f) < epsilon:\n        frag_norm = np.ones_like(fragility_scores) * 0.5 + epsilon\n    else:\n        frag_norm = (fragility_scores - mn_f) / (mx_f - mn_f) + epsilon\n\n    # Final score: betweenness centrality scaled by adaptive clustering penalty and normalized neighborhood fragility\n    scores = bet_norm * clustering_penalty * frag_norm\n\n    max_idx = int(np.argmax(scores))\n    next_node = unvisited_nodes[max_idx]\n    return next_node\n```",
+    "llm_analysis": null,
+    "llm_thought": null,
+    "llm_reflection": "The small improvements involved better balancing of multiple node features like betweenness, clustering, core number diversity, and neighborhood fragility to improve early disruption without sacrificing final fragmentation. The primary failure was high time_select in the more complex scoring schemes, indicating some features added too much computational overhead for limited benefit. Algorithm 1 strikes a good balance between complexity and effectiveness but can be improved by reducing the per-node neighborhood scanning cost and stabilizing normalization steps."
+  }
+]
