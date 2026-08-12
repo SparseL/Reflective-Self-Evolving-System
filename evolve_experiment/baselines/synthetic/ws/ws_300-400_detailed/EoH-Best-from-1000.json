@@ -1,0 +1,168 @@
+{
+  "algorithm": "EoH-Best-from-1000 (gpt-4.1-mini)",
+  "dataset": "synthetic_ws_300-400",
+  "detailed_results": [
+    {
+      "instance": "g_0",
+      "objective": 0.20440392991452894,
+      "metrics": {
+        "time_select": 20.931920051574707,
+        "time_anc": 0.06955957412719727,
+        "anc_prefix_k": 0.8562450703508638,
+        "fht_50": 92.0,
+        "fht_10": 116.0,
+        "lcc_at_k_frac": 0.8513853904282116,
+        "k": 59,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.20440392991452894,
+            "metrics": {
+              "time_select": 20.931920051574707,
+              "time_anc": 0.06955957412719727,
+              "anc_prefix_k": 0.8562450703508638,
+              "fht_50": 92.0,
+              "fht_10": 116.0,
+              "lcc_at_k_frac": 0.8513853904282116,
+              "k": 59
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_1",
+      "objective": 0.219005630684394,
+      "metrics": {
+        "time_select": 11.858289241790771,
+        "time_anc": 0.038324832916259766,
+        "anc_prefix_k": 0.8553040810322363,
+        "fht_50": 83.0,
+        "fht_10": 98.0,
+        "lcc_at_k_frac": 0.8511326860841424,
+        "k": 46,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.219005630684394,
+            "metrics": {
+              "time_select": 11.858289241790771,
+              "time_anc": 0.038324832916259766,
+              "anc_prefix_k": 0.8553040810322363,
+              "fht_50": 83.0,
+              "fht_10": 98.0,
+              "lcc_at_k_frac": 0.8511326860841424,
+              "k": 46
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_2",
+      "objective": 0.20521013748140157,
+      "metrics": {
+        "time_select": 17.720720052719116,
+        "time_anc": 0.06200051307678223,
+        "anc_prefix_k": 0.8550845149173488,
+        "fht_50": 91.0,
+        "fht_10": 103.0,
+        "lcc_at_k_frac": 0.8502673796791443,
+        "k": 56,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.20521013748140157,
+            "metrics": {
+              "time_select": 17.720720052719116,
+              "time_anc": 0.06200051307678223,
+              "anc_prefix_k": 0.8550845149173488,
+              "fht_50": 91.0,
+              "fht_10": 103.0,
+              "lcc_at_k_frac": 0.8502673796791443,
+              "k": 56
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_3",
+      "objective": 0.18544300485155377,
+      "metrics": {
+        "time_select": 12.485083103179932,
+        "time_anc": 0.043005943298339844,
+        "anc_prefix_k": 0.8564567155593903,
+        "fht_50": 61.0,
+        "fht_10": 78.0,
+        "lcc_at_k_frac": 0.8524590163934426,
+        "k": 45,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.18544300485155377,
+            "metrics": {
+              "time_select": 12.485083103179932,
+              "time_anc": 0.043005943298339844,
+              "anc_prefix_k": 0.8564567155593903,
+              "fht_50": 61.0,
+              "fht_10": 78.0,
+              "lcc_at_k_frac": 0.8524590163934426,
+              "k": 45
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_4",
+      "objective": 0.21216336990840423,
+      "metrics": {
+        "time_select": 13.4166738986969,
+        "time_anc": 0.046298980712890625,
+        "anc_prefix_k": 0.8561008548968645,
+        "fht_50": 84.0,
+        "fht_10": 96.0,
+        "lcc_at_k_frac": 0.8518518518518519,
+        "k": 48,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.21216336990840423,
+            "metrics": {
+              "time_select": 13.4166738986969,
+              "time_anc": 0.046298980712890625,
+              "anc_prefix_k": 0.8561008548968645,
+              "fht_50": 84.0,
+              "fht_10": 96.0,
+              "lcc_at_k_frac": 0.8518518518518519,
+              "k": 48
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "summary_average": {
+    "objective": 0.2052452145680565,
+    "time_select_avg": 15.282537269592286,
+    "time_anc_avg": 0.05183796882629395,
+    "fht_50_avg": 82.2,
+    "fht_10_avg": 98.2,
+    "lcc_at_k_frac_avg": 0.8514192648873585,
+    "anc_prefix_k_avg": 0.8558382473513408,
+    "k_avg": 50.8,
+    "n_instances": 5
+  },
+  "created_at": "2026-04-01T20:36:02",
+  "eoh_origin": {
+    "from_dataset": "synthetic_ws_1000",
+    "meta": {
+      "group": "group2_ws_uniform",
+      "model": "gpt-4.1-mini",
+      "run_name": "synthetic_ws_1000_20260330_100257",
+      "best_generation": "28",
+      "operator_at_best": "e2"
+    }
+  }
+}

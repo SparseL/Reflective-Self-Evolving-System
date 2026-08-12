@@ -1,0 +1,158 @@
+{
+  "algorithm": "CI(l=3)",
+  "dataset": "synthetic_ws_4000",
+  "detailed_results": [
+    {
+      "instance": "g_0",
+      "objective": 0.2559696872655664,
+      "metrics": {
+        "time_select": 123.69008255004883,
+        "time_anc": 6.577866554260254,
+        "anc_prefix_k": 0.8572518546303243,
+        "fht_50": 1172.0,
+        "fht_10": 1585.0,
+        "lcc_at_k_frac": 0.85,
+        "k": 600,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.2559696872655664,
+            "metrics": {
+              "time_select": 123.69008255004883,
+              "time_anc": 6.577866554260254,
+              "anc_prefix_k": 0.8572518546303243,
+              "fht_50": 1172.0,
+              "fht_10": 1585.0,
+              "lcc_at_k_frac": 0.85,
+              "k": 600
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_1",
+      "objective": 0.26045779360465116,
+      "metrics": {
+        "time_select": 124.37765455245972,
+        "time_anc": 6.876563310623169,
+        "anc_prefix_k": 0.8572518546303243,
+        "fht_50": 1171.0,
+        "fht_10": 1639.0,
+        "lcc_at_k_frac": 0.85,
+        "k": 600,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.26045779360465116,
+            "metrics": {
+              "time_select": 124.37765455245972,
+              "time_anc": 6.876563310623169,
+              "anc_prefix_k": 0.8572518546303243,
+              "fht_50": 1171.0,
+              "fht_10": 1639.0,
+              "lcc_at_k_frac": 0.85,
+              "k": 600
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_2",
+      "objective": 0.25877686968617153,
+      "metrics": {
+        "time_select": 124.55818247795105,
+        "time_anc": 6.606473684310913,
+        "anc_prefix_k": 0.8572518546303243,
+        "fht_50": 1171.0,
+        "fht_10": 1626.0,
+        "lcc_at_k_frac": 0.85,
+        "k": 600,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.25877686968617153,
+            "metrics": {
+              "time_select": 124.55818247795105,
+              "time_anc": 6.606473684310913,
+              "anc_prefix_k": 0.8572518546303243,
+              "fht_50": 1171.0,
+              "fht_10": 1626.0,
+              "lcc_at_k_frac": 0.85,
+              "k": 600
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_3",
+      "objective": 0.256751865903976,
+      "metrics": {
+        "time_select": 125.96864557266235,
+        "time_anc": 6.593959808349609,
+        "anc_prefix_k": 0.8572518546303243,
+        "fht_50": 1172.0,
+        "fht_10": 1573.0,
+        "lcc_at_k_frac": 0.85,
+        "k": 600,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.256751865903976,
+            "metrics": {
+              "time_select": 125.96864557266235,
+              "time_anc": 6.593959808349609,
+              "anc_prefix_k": 0.8572518546303243,
+              "fht_50": 1172.0,
+              "fht_10": 1573.0,
+              "lcc_at_k_frac": 0.85,
+              "k": 600
+            }
+          }
+        ]
+      }
+    },
+    {
+      "instance": "g_4",
+      "objective": 0.2578557934796199,
+      "metrics": {
+        "time_select": 123.33526802062988,
+        "time_anc": 6.475078105926514,
+        "anc_prefix_k": 0.8572518546303243,
+        "fht_50": 1172.0,
+        "fht_10": 1589.0,
+        "lcc_at_k_frac": 0.85,
+        "k": 600,
+        "detailed_results": [
+          {
+            "instance": "g_0",
+            "objective": 0.2578557934796199,
+            "metrics": {
+              "time_select": 123.33526802062988,
+              "time_anc": 6.475078105926514,
+              "anc_prefix_k": 0.8572518546303243,
+              "fht_50": 1172.0,
+              "fht_10": 1589.0,
+              "lcc_at_k_frac": 0.85,
+              "k": 600
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "summary_average": {
+    "objective": 0.257962401987997,
+    "time_select_avg": 124.38596663475036,
+    "time_anc_avg": 6.625988292694092,
+    "fht_50_avg": 1171.6,
+    "fht_10_avg": 1602.4,
+    "lcc_at_k_frac_avg": 0.85,
+    "anc_prefix_k_avg": 0.8572518546303243,
+    "k_avg": 600.0,
+    "n_instances": 5
+  },
+  "created_at": "2026-04-02T02:24:38"
+}
