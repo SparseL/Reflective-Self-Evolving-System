@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    unvisited_set = set(unvisited_nodes)\n    node_attrs = graph.nodes\n\n    # Normalize eigenvector centrality\n    eigenvector = np.array([node_attrs[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    ev_norm = normalize(eigenvector) + 1e-9\n\n    # Precompute unvisited degrees for neighbors once\n    unvisited_degree = {}\n    for node in unvisited_nodes:\n        nbrs = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        unvisited_degree[node] = len(nbrs)\n\n    neighbor_vulnerability = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if not neighbors:\n            neighbor_vulnerability.append(0.0)\n            continue\n        # Fraction of neighbors with unvisited degree <= 2 (fragile neighbors)\n        low_deg_count = sum(1 for nbr in neighbors if unvisited_degree.get(nbr, 0) <= 2)\n        vuln_score = low_deg_count / len(neighbors)\n        neighbor_vulnerability.append(vuln_score + 1e-9)\n\n    neighbor_vulnerability = np.array(neighbor_vulnerability)\n    neighbor_vulnerability = normalize(neighbor_vulnerability) + 1e-9\n\n    # Final score: product of normalized eigenvector centrality and neighbor vulnerability\n    scores = ev_norm * neighbor_vulnerability\n\n    max_idx = int(np.argmax(scores))\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.21987,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "b34b461a93419d6fe356671453764141",
+               "0587d00d8a1b4326a2cb6dbdbccaec14",
+               "b34b461a93419d6fe356671453764141",
+               "54745d6400a01c246314e18fab57d427",
+               "acf37cda6cd26b8a97a13e264e48fd39"
+          ],
+          "anc_prefix_k": 0.7122893700199145,
+          "fht_50": 540.0,
+          "fht_10": 1496.0,
+          "lcc_at_k_frac": 0.7423128342245989,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.21987409281843356,
+                    "metrics": {
+                         "time_select": 31.66205096244812,
+                         "time_anc": 6.77176308631897,
+                         "anc_prefix_k": 0.7122893700199145,
+                         "fht_50": 540.0,
+                         "fht_10": 1496.0,
+                         "lcc_at_k_frac": 0.7423128342245989,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 39.09013247489929,
+     "time_select": 31.66205096244812,
+     "time_anc": 6.77176308631897,
+     "unique_id": "3f6894cc822d13bc712b4bda91ef0abb"
+}

@@ -1,0 +1,36 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    node_attrs = graph.nodes\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    epsilon = 1e-9\n\n    # Extract raw attributes\n    degrees = np.array([node_attrs[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([node_attrs[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_nums = np.array([node_attrs[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([node_attrs[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([node_attrs[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    # Normalize helper\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr)*0.5\n        return (arr - mn) / (mx - mn)\n\n    bet_norm = normalize(betweenness)\n    eig_norm = normalize(eigenvector)\n    clust_norm = normalize(clustering)\n\n    # Weighted harmonic mean of betweenness and eigenvector centrality:\n    # Weight betweenness higher to emphasize global bridges,\n    # weight eigenvector to reflect local/global influence.\n    w_bet, w_eig = 0.6, 0.4\n    denom = w_bet / (bet_norm + epsilon) + w_eig / (eig_norm + epsilon)\n    harm_mean = (w_bet + w_eig) / denom  # higher means higher combined centrality\n\n    # Neighborhood low-core boost: fraction of neighbors with core_number <= 35% max_core_k\n    unvisited_set = set(unvisited_nodes)\n    low_core_ratios = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set and nbr != node]\n        if not neighbors:\n            low_core_ratios.append(0.0)\n            continue\n        low_core_count = sum(1 for nbr in neighbors if node_attrs[nbr]['core_number'] <= max_core_k * 0.35)\n        low_core_ratios.append(low_core_count / len(neighbors))\n    low_core_ratios = np.array(low_core_ratios)\n    low_core_norm = normalize(low_core_ratios) + epsilon  # avoid zeros\n\n    # Node penalty from clustering: higher clustering means locally redundant, so penalize\n    penalty = 1 - clust_norm  # higher value for less clustered nodes\n\n    # Final combined score: harmonic mean centrality * penalty * neighborhood low-core boost\n    scores = harm_mean * penalty * low_core_norm\n\n    max_idx = int(np.argmax(scores))\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.21781,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "7bc0f33e0949d3f6dbd9df12803540cd"
+          ],
+          "anc_prefix_k": 0.7106943692437766,
+          "fht_50": 498.0,
+          "fht_10": 1563.0,
+          "lcc_at_k_frac": 0.7316176470588235,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.2178092174979044,
+                    "metrics": {
+                         "time_select": 42.398165464401245,
+                         "time_anc": 5.867048025131226,
+                         "anc_prefix_k": 0.7106943692437766,
+                         "fht_50": 498.0,
+                         "fht_10": 1563.0,
+                         "lcc_at_k_frac": 0.7316176470588235,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 48.820833921432495,
+     "time_select": 42.398165464401245,
+     "time_anc": 5.867048025131226,
+     "unique_id": "35d3b8c2dcafc85418ab0270b657095a"
+}

@@ -1,0 +1,40 @@
+{
+     "algorithm": "n: [nbr for nbr in graph.neighbors(n) if nbr in unvisited_set] for n in unvisited_nodes",
+     "code": "import numpy as np\nimport networkx as nx\n\ndef select_next_node(graph, unvisited_nodes):\n    node_attrs = graph.nodes\n    pre = graph.graph.get('precomputed', {})\n    unvisited_set = set(unvisited_nodes)\n\n    epsilon = 1e-9\n    max_core_k = pre.get('max_core_k', 1)\n\n    # Precompute normalized clustering\n    clustering = np.array([node_attrs[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    c_min, c_max = clustering.min(), clustering.max()\n    if abs(c_max - c_min) < 1e-9:\n        inv_clust_norm = np.ones_like(clustering) * 0.5\n    else:\n        inv_clust_norm = 1.0 - (clustering - c_min) / (c_max - c_min) + epsilon\n\n    # Estimate local edge betweenness proxy for each node: sum of edge betweenness of incident edges within unvisited\n    # Since edge betweenness is not precomputed, approximate by: \n    # edge_betw_proxy = 1 / (min degree of endpoints) to approximate bridge edges fast.\n    # Use degree to approximate bottleneck edges.\n\n    degrees = {n: node_attrs[n]['degree'] for n in unvisited_nodes}\n    edge_betw_proxy = {}\n    # Build neighbors dict for unvisited nodes for efficiency\n    neighbors_dict = {n: [nbr for nbr in graph.neighbors(n) if nbr in unvisited_set] for n in unvisited_nodes}\n\n    local_bridge_scores = []\n    for node in unvisited_nodes:\n        nbrs = neighbors_dict[node]\n        if not nbrs:\n            local_bridge_scores.append(0.0)\n            continue\n        score = 0.0\n        for nbr in nbrs:\n            deg_node = degrees[node] if degrees[node] > 0 else 1\n            deg_nbr = degrees[nbr] if degrees[nbr] > 0 else 1\n            # Smaller min degree means more likely bridge edge\n            edge_score = 1.0 / (min(deg_node, deg_nbr))\n            score += edge_score\n        local_bridge_scores.append(score + epsilon)\n    local_bridge_scores = np.array(local_bridge_scores)\n\n    # Normalize local_bridge_scores\n    lb_min, lb_max = local_bridge_scores.min(), local_bridge_scores.max()\n    if abs(lb_max - lb_min) < 1e-9:\n        lb_norm = np.ones_like(local_bridge_scores) * 0.5\n    else:\n        lb_norm = (local_bridge_scores - lb_min) / (lb_max - lb_min) + epsilon\n\n    # Neighborhood core spread: variance of core_numbers of neighbors (captures structural heterogeneity)\n    core_numbers = np.array([node_attrs[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    core_vars = []\n    for idx, node in enumerate(unvisited_nodes):\n        nbrs = neighbors_dict[node]\n        if not nbrs:\n            core_vars.append(0.0)\n            continue\n        nbr_cores = np.array([node_attrs[nbr]['core_number'] for nbr in nbrs], dtype=float)\n        core_vars.append(np.var(nbr_cores))\n    core_vars = np.array(core_vars)\n\n    # Normalize core_vars\n    cv_min, cv_max = core_vars.min(), core_vars.max()\n    if abs(cv_max - cv_min) < 1e-9:\n        cv_norm = np.ones_like(core_vars) * 0.5\n    else:\n        cv_norm = (core_vars - cv_min) / (cv_max - cv_min) + epsilon\n\n    # Final combined score: local_bridge_score * inverse clustering * neighborhood core spread\n    scores = lb_norm * inv_clust_norm * cv_norm\n\n    max_idx = int(np.argmax(scores))\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.21507,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "4704735fd931c8c6d3219797d5132ee2",
+               "cab98af63bfff29f73e8e3a443018992",
+               "35d3b8c2dcafc85418ab0270b657095a",
+               "b34b461a93419d6fe356671453764141",
+               "ed7fa57fc09d74648932cfce4e668fe9"
+          ],
+          "anc_prefix_k": 0.7163593081814197,
+          "fht_50": 528.0,
+          "fht_10": 1499.0,
+          "lcc_at_k_frac": 0.7413101604278075,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.21506747726510003,
+                    "metrics": {
+                         "time_select": 128.99511122703552,
+                         "time_anc": 7.33845591545105,
+                         "anc_prefix_k": 0.7163593081814197,
+                         "fht_50": 528.0,
+                         "fht_10": 1499.0,
+                         "lcc_at_k_frac": 0.7413101604278075,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 137.19042372703552,
+     "time_select": 128.99511122703552,
+     "time_anc": 7.33845591545105,
+     "unique_id": "9c6e0052ce494807349161269561f227"
+}

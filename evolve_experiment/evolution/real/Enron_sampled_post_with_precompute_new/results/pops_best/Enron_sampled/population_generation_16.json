@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "# Backbone idea: \n# All provided algorithms combine various normalized centrality and local structural metrics \n# with weighted formulas to rank nodes, balancing global importance and local topology \n# to iteratively fragment the network.\n\n# New algorithm description:\n# {Select the next node by evaluating the harmonic mean of normalized betweenness and inverse clustering coefficient,\n# multiplied by an adaptive penalty factor derived from the node's closeness proxy (eigenvector) and \n# neighborhood core diversity, prioritizing nodes that globally bridge communities yet locally diversify core connectivity.}\n\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    unvisited_set = set(unvisited_nodes)\n    \n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    betw_n = normalize(betweenness) + 1e-9\n    inv_clust_n = normalize(1 - clustering) + 1e-9\n    eig_n = normalize(eigenvector) + 1e-9\n    core_n = normalize(core_number) + 1e-9\n    \n    # Harmonic mean of betweenness and inverse clustering to prioritize nodes bridging and locally sparse\n    harm_mean = 2 * (betw_n * inv_clust_n) / (betw_n + inv_clust_n)\n    \n    # Compute neighborhood core diversity (std dev of core numbers of unvisited neighbors)\n    nbr_core_diversity = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if neighbors:\n            cores = [graph.nodes[nbr]['core_number'] for nbr in neighbors]\n            nbr_core_diversity.append(np.std(cores) / (max_core_k if max_core_k > 0 else 1))\n        else:\n            nbr_core_diversity.append(0.0)\n    nbr_core_diversity = np.array(nbr_core_diversity) + 1e-9  # avoid zero\n    \n    # Adaptive penalty: nodes with high eigenvector but low neighborhood core diversity get penalized \n    penalty = np.exp(-eig_n / nbr_core_diversity)\n    \n    scores = harm_mean * penalty\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.23251,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "9c1a6956365d0528f2f9003e4327574d",
+               "9399f5bfe21ff32ce9771ad0885bcd8b",
+               "2767807a8c3606c03a9eba4f56bc6f57",
+               "6053da9562439ededef630328e14009e",
+               "2767807a8c3606c03a9eba4f56bc6f57"
+          ],
+          "anc_prefix_k": 0.737612617223647,
+          "fht_50": 606.0,
+          "fht_10": 1572.0,
+          "lcc_at_k_frac": 0.7650401069518716,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.23250921367604008,
+                    "metrics": {
+                         "time_select": 112.72969150543213,
+                         "time_anc": 5.6662657260894775,
+                         "anc_prefix_k": 0.737612617223647,
+                         "fht_50": 606.0,
+                         "fht_10": 1572.0,
+                         "lcc_at_k_frac": 0.7650401069518716,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 118.90629744529724,
+     "time_select": 112.72969150543213,
+     "time_anc": 5.6662657260894775,
+     "unique_id": "884cae278785b95256ca82e7ef68bd27"
+}

@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_clust_global = pre.get('avg_clustering', 0.5)  # fallback if not available\n    \n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clust = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    # Avoid division by zero by adding a small epsilon\n    eps = 1e-9\n    ratio = betw / (degrees + eps)\n    \n    # Normalize ratio to [0,1]\n    mn, mx = ratio.min(), ratio.max()\n    if abs(mx - mn) < 1e-9:\n        ratio_n = np.full_like(ratio, 0.5)\n    else:\n        ratio_n = (ratio - mn) / (mx - mn)\n    \n    # Compute absolute deviation of clustering coefficient from global average\n    clust_dev = np.abs(clust - avg_clust_global)\n    # Normalize deviation to [0,1]\n    mn_d, mx_d = clust_dev.min(), clust_dev.max()\n    if abs(mx_d - mn_d) < 1e-9:\n        clust_dev_n = np.full_like(clust_dev, 0.5)\n    else:\n        clust_dev_n = (clust_dev - mn_d) / (mx_d - mn_d)\n    \n    # Score combines high betw/deg ratio and moderate clustering deviation penalty\n    # Weight parameters\n    w_ratio = 0.7\n    w_clust_dev = 0.3\n    \n    scores = w_ratio * ratio_n - w_clust_dev * clust_dev_n\n    \n    idx = np.argmax(scores)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.23662,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "7cd16ea05d7e0ee7e32074578452ce9b",
+               "1b40ff5304cc66a5851f5756ed30e57b",
+               "9399f5bfe21ff32ce9771ad0885bcd8b",
+               "7cd16ea05d7e0ee7e32074578452ce9b",
+               "7cd16ea05d7e0ee7e32074578452ce9b"
+          ],
+          "anc_prefix_k": 0.7374979470137877,
+          "fht_50": 600.0,
+          "fht_10": 1610.0,
+          "lcc_at_k_frac": 0.7650401069518716,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.23662372963914,
+                    "metrics": {
+                         "time_select": 4.21969199180603,
+                         "time_anc": 5.544416189193726,
+                         "anc_prefix_k": 0.7374979470137877,
+                         "fht_50": 600.0,
+                         "fht_10": 1610.0,
+                         "lcc_at_k_frac": 0.7650401069518716,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 10.289382696151733,
+     "time_select": 4.21969199180603,
+     "time_anc": 5.544416189193726,
+     "unique_id": "01deeed1b239fee869f5e6fd6e1b8335"
+}

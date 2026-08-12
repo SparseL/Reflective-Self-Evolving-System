@@ -1,0 +1,38 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    node_attrs = graph.nodes\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    \n    betw = np.array([node_attrs[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([node_attrs[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    clust = np.array([node_attrs[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core = np.array([node_attrs[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    degree = np.array([node_attrs[n]['degree'] for n in unvisited_nodes], dtype=float)\n    \n    def normalize(arr):\n        mn, mx = np.min(arr), np.max(arr)\n        if abs(mx - mn) < 1e-9:\n            return np.full_like(arr, 0.5)\n        return (arr - mn) / (mx - mn)\n    \n    betw_n = normalize(betw) + 1e-9\n    eig_n = normalize(eig) + 1e-9\n    inv_clust_n = normalize(1 - clust) + 1e-9\n    core_n = normalize(core) + 1e-9\n    \n    # Adaptive weights shifting emphasis from early disruption (betw, inv_clust) to stability (core)\n    w_early = 0.45\n    w_core = 0.1\n    w_eig = 0.35\n    w_inv_clust = 0.45\n    \n    # Geometric mean weighted score (log-space for numerical stability)\n    # score = (betw^w_early) * (eig^w_eig) * (inv_clust^w_inv_clust) * (core^w_core)\n    log_score = (w_early * np.log(betw_n) + \n                 w_eig * np.log(eig_n) + \n                 w_inv_clust * np.log(inv_clust_n) + \n                 w_core * np.log(core_n))\n    scores = np.exp(log_score)\n    \n    # Penalize very high degree nodes mildly to avoid hubs dominating early but keep them considered\n    degree_n = normalize(degree)\n    penalty = np.exp(-degree_n)  # decays with degree\n    \n    final_scores = scores * penalty\n    \n    idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.23766,
+     "other_inf": {
+          "operator": "t2",
+          "parent": [
+               "65cb4033b4cd3a2272435a03228c45bf",
+               "147d65ba186a8dad1ee4fe92c9281802",
+               "bd9ab0b3d7991704b2be4597e792d72c"
+          ],
+          "anc_prefix_k": 0.7517283071960662,
+          "fht_50": 629.0,
+          "fht_10": 1543.0,
+          "lcc_at_k_frac": 0.7797459893048129,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.23766205437054774,
+                    "metrics": {
+                         "time_select": 6.554265022277832,
+                         "time_anc": 4.928828239440918,
+                         "anc_prefix_k": 0.7517283071960662,
+                         "fht_50": 629.0,
+                         "fht_10": 1543.0,
+                         "lcc_at_k_frac": 0.7797459893048129,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 12.001044750213623,
+     "time_select": 6.554265022277832,
+     "time_anc": 4.928828239440918,
+     "unique_id": "9399f5bfe21ff32ce9771ad0885bcd8b"
+}

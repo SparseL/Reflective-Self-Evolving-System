@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "# {Select the next node by prioritizing nodes with a balance of low local redundancy (1 - clustering),\n# moderate global leverage (betweenness), and a novel \"neighbor disjointness\" score measuring how uniquely \n# connected the node's neighbors are outside the current unvisited set, thus favoring nodes whose removal \n# isolates unique subnetworks rapidly while avoiding overly redundant neighborhoods.}\n\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    unvisited_set = set(unvisited_nodes)\n    node_attrs = graph.nodes\n    \n    degree = np.array([node_attrs[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([node_attrs[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([node_attrs[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    # Normalize betweenness and clustering for balanced scoring\n    betw_n = normalize(betweenness) + 1e-9\n    inv_clust_n = 1 - normalize(clustering) + 1e-9\n\n    # Precompute neighbor disjointness: fraction of neighbors with edges only to this node among unvisited\n    neighbor_disjointness = []\n    for node in unvisited_nodes:\n        nbrs = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if not nbrs:\n            neighbor_disjointness.append(0.0)\n            continue\n        \n        unique_conn_count = 0\n        for nbr in nbrs:\n            nbr_neighbors = [nn for nn in graph.neighbors(nbr) if nn in unvisited_set]\n            # Count if nbr connects uniquely to 'node' (degree == 1 within unvisited)\n            if len(nbr_neighbors) == 1:\n                unique_conn_count += 1\n        disjoint_score = unique_conn_count / len(nbrs)\n        neighbor_disjointness.append(disjoint_score + 1e-9)\n    neighbor_disjointness = np.array(neighbor_disjointness)\n    \n    # Normalize neighbor disjointness\n    neighbor_disjointness = normalize(neighbor_disjointness) + 1e-9\n\n    # Final score combines inverted clustering, betweenness, and neighbor disjointness multiplicatively\n    scores = inv_clust_n * betw_n * neighbor_disjointness\n    \n    max_idx = int(np.argmax(scores))\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.22307,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "10696368c85b187dd0b3f7748faea10c",
+               "acf37cda6cd26b8a97a13e264e48fd39",
+               "0587d00d8a1b4326a2cb6dbdbccaec14",
+               "01deeed1b239fee869f5e6fd6e1b8335",
+               "54745d6400a01c246314e18fab57d427"
+          ],
+          "anc_prefix_k": 0.7120759670068902,
+          "fht_50": 564.0,
+          "fht_10": 1527.0,
+          "lcc_at_k_frac": 0.7489973262032086,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.2230713537988545,
+                    "metrics": {
+                         "time_select": 268.7336497306824,
+                         "time_anc": 5.4679131507873535,
+                         "anc_prefix_k": 0.7120759670068902,
+                         "fht_50": 564.0,
+                         "fht_10": 1527.0,
+                         "lcc_at_k_frac": 0.7489973262032086,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 274.7403087615967,
+     "time_select": 268.7336497306824,
+     "time_anc": 5.4679131507873535,
+     "unique_id": "b34b461a93419d6fe356671453764141"
+}

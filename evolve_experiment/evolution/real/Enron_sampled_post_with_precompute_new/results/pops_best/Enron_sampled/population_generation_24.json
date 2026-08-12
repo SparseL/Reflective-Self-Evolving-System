@@ -1,0 +1,36 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    unvisited_set = set(unvisited_nodes)\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    deg_n = normalize(degree) + 1e-9\n    betw_n = normalize(betweenness) + 1e-9\n    inv_clust_n = normalize(1 - clustering) + 1e-9\n    core_n = normalize(core_number) + 1e-9\n    \n    # Geometric mean of degree and betweenness to emphasize global influence\n    geo_mean = np.sqrt(deg_n * betw_n)\n    \n    # Neighborhood core variance normalized by max_core_k\n    nbr_core_var = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if neighbors:\n            cores = [graph.nodes[nbr]['core_number'] for nbr in neighbors]\n            nbr_core_var.append(np.var(cores) / (max_core_k if max_core_k > 0 else 1))\n        else:\n            nbr_core_var.append(0.0)\n    nbr_core_var = np.array(nbr_core_var) + 1e-9  # avoid zero\n    \n    # Diversity factor combining inverse clustering and neighborhood core variance\n    diversity = inv_clust_n * nbr_core_var\n    \n    scores = geo_mean * diversity\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.22934,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "884cae278785b95256ca82e7ef68bd27"
+          ],
+          "anc_prefix_k": 0.740896716222164,
+          "fht_50": 588.0,
+          "fht_10": 1492.0,
+          "lcc_at_k_frac": 0.768048128342246,
+          "k": 448,
+          "detailed_results": [
+               {
+                    "instance": "Enron_sampled",
+                    "objective": 0.2293374356503648,
+                    "metrics": {
+                         "time_select": 93.68128085136414,
+                         "time_anc": 5.512641668319702,
+                         "anc_prefix_k": 0.740896716222164,
+                         "fht_50": 588.0,
+                         "fht_10": 1492.0,
+                         "lcc_at_k_frac": 0.768048128342246,
+                         "k": 448
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 99.70805954933167,
+     "time_select": 93.68128085136414,
+     "time_anc": 5.512641668319702,
+     "unique_id": "54745d6400a01c246314e18fab57d427"
+}
