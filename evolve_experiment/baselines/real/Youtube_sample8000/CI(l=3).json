@@ -1,0 +1,15 @@
+{
+  "algorithm": "CI(l=3)",
+  "dataset": "Youtube_sample8000",
+  "objective": 0.16199156527351052,
+  "metrics": {
+    "time_select": 47360.262570142746,
+    "time_anc": 49.31101393699646,
+    "anc_prefix_k": 0.7591121436278214,
+    "fht_50": 1032.0,
+    "fht_10": 2487.0,
+    "lcc_at_k_frac": 0.6763878229726272,
+    "k": 1172
+  },
+  "created_at": "2026-01-28T05:51:10"
+}

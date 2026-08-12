@@ -1,0 +1,30 @@
+{
+  "algorithm": "MinSum",
+  "dataset": "HI-II-14",
+  "objective": 0.03981108357143536,
+  "metrics": {
+    "time_select": 34.36241006851196,
+    "time_anc": 16.94698143005371,
+    "anc_prefix_k": 0.2653784599999758,
+    "fht_50": 122.0,
+    "fht_10": 413.0,
+    "lcc_at_k_frac": 0.00936374549819928,
+    "k": 624,
+    "detailed_results": [
+      {
+        "instance": "HI-II-14",
+        "objective": 0.03981108357143536,
+        "metrics": {
+          "time_select": 34.36241006851196,
+          "time_anc": 16.94698143005371,
+          "anc_prefix_k": 0.2653784599999758,
+          "fht_50": 122.0,
+          "fht_10": 413.0,
+          "lcc_at_k_frac": 0.00936374549819928,
+          "k": 624
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-12T00:45:24"
+}

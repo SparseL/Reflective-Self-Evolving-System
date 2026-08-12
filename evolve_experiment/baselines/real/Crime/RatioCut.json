@@ -1,0 +1,30 @@
+{
+  "algorithm": "RatioCut",
+  "dataset": "Crime",
+  "objective": 0.128988616366723,
+  "metrics": {
+    "time_select": 0.08639049530029297,
+    "time_anc": 0.36418724060058594,
+    "anc_prefix_k": 0.7250105880170152,
+    "fht_50": 116.0,
+    "fht_10": 176.0,
+    "lcc_at_k_frac": 0.6924004825090471,
+    "k": 124,
+    "detailed_results": [
+      {
+        "instance": "Crime",
+        "objective": 0.128988616366723,
+        "metrics": {
+          "time_select": 0.08639049530029297,
+          "time_anc": 0.36418724060058594,
+          "anc_prefix_k": 0.7250105880170152,
+          "fht_50": 116.0,
+          "fht_10": 176.0,
+          "lcc_at_k_frac": 0.6924004825090471,
+          "k": 124
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:27:52"
+}

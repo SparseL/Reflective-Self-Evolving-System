@@ -1,0 +1,30 @@
+{
+  "algorithm": "HPRA",
+  "dataset": "HI-II-14",
+  "objective": 0.0333029209968027,
+  "metrics": {
+    "time_select": 67.30191206932068,
+    "time_anc": 23.591521501541138,
+    "anc_prefix_k": 0.22219958588622768,
+    "fht_50": 86.0,
+    "fht_10": 351.0,
+    "lcc_at_k_frac": 0.020168067226890758,
+    "k": 624,
+    "detailed_results": [
+      {
+        "instance": "HI-II-14",
+        "objective": 0.0333029209968027,
+        "metrics": {
+          "time_select": 67.30191206932068,
+          "time_anc": 23.591521501541138,
+          "anc_prefix_k": 0.22219958588622768,
+          "fht_50": 86.0,
+          "fht_10": 351.0,
+          "lcc_at_k_frac": 0.020168067226890758,
+          "k": 624
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-12T00:46:55"
+}

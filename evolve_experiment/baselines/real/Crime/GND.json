@@ -1,0 +1,30 @@
+{
+  "algorithm": "GND",
+  "dataset": "Crime",
+  "objective": 0.1156597654247077,
+  "metrics": {
+    "time_select": 0.21538138389587402,
+    "time_anc": 0.41162776947021484,
+    "anc_prefix_k": 0.7159452152596024,
+    "fht_50": 115.0,
+    "fht_10": 142.0,
+    "lcc_at_k_frac": 0.6815440289505428,
+    "k": 124,
+    "detailed_results": [
+      {
+        "instance": "Crime",
+        "objective": 0.1156597654247077,
+        "metrics": {
+          "time_select": 0.21538138389587402,
+          "time_anc": 0.41162776947021484,
+          "anc_prefix_k": 0.7159452152596024,
+          "fht_50": 115.0,
+          "fht_10": 142.0,
+          "lcc_at_k_frac": 0.6815440289505428,
+          "k": 124
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:27:52"
+}

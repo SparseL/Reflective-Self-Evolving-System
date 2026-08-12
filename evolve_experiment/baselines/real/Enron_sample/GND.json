@@ -1,0 +1,30 @@
+{
+  "algorithm": "GND",
+  "dataset": "Enron_sample",
+  "objective": 0.2489187870234323,
+  "metrics": {
+    "time_select": 4.549957990646362,
+    "time_anc": 5.4895710945129395,
+    "anc_prefix_k": 0.7981767297155931,
+    "fht_50": 695.0,
+    "fht_10": 1375.0,
+    "lcc_at_k_frac": 0.7975275643167391,
+    "k": 448,
+    "detailed_results": [
+      {
+        "instance": "Enron_sample",
+        "objective": 0.2489187870234323,
+        "metrics": {
+          "time_select": 4.549957990646362,
+          "time_anc": 5.4895710945129395,
+          "anc_prefix_k": 0.7981767297155931,
+          "fht_50": 695.0,
+          "fht_10": 1375.0,
+          "lcc_at_k_frac": 0.7975275643167391,
+          "k": 448
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:32:44"
+}

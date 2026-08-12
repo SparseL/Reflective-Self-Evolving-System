@@ -1,0 +1,30 @@
+{
+  "algorithm": "HPRA",
+  "dataset": "Youtube_sample4000",
+  "objective": 0.10698187525275822,
+  "metrics": {
+    "time_select": 100.3541989326477,
+    "time_anc": 17.016577005386353,
+    "anc_prefix_k": 0.5306929337212023,
+    "fht_50": 319.0,
+    "fht_10": 1025.0,
+    "lcc_at_k_frac": 0.5745454545454546,
+    "k": 577,
+    "detailed_results": [
+      {
+        "instance": "Youtube_sample4000",
+        "objective": 0.10698187525275822,
+        "metrics": {
+          "time_select": 100.3541989326477,
+          "time_anc": 17.016577005386353,
+          "anc_prefix_k": 0.5306929337212023,
+          "fht_50": 319.0,
+          "fht_10": 1025.0,
+          "lcc_at_k_frac": 0.5745454545454546,
+          "k": 577
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-12T00:54:58"
+}

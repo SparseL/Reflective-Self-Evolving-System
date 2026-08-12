@@ -1,0 +1,30 @@
+{
+  "algorithm": "MinSum",
+  "dataset": "Enron_sample",
+  "objective": 0.2642862856997325,
+  "metrics": {
+    "time_select": 152.8805375099182,
+    "time_anc": 8.288063049316406,
+    "anc_prefix_k": 0.8051208241427285,
+    "fht_50": 727.0,
+    "fht_10": 1623.0,
+    "lcc_at_k_frac": 0.805880387570999,
+    "k": 448,
+    "detailed_results": [
+      {
+        "instance": "Enron_sample",
+        "objective": 0.2642862856997325,
+        "metrics": {
+          "time_select": 152.8805375099182,
+          "time_anc": 8.288063049316406,
+          "anc_prefix_k": 0.8051208241427285,
+          "fht_50": 727.0,
+          "fht_10": 1623.0,
+          "lcc_at_k_frac": 0.805880387570999,
+          "k": 448
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:35:25"
+}

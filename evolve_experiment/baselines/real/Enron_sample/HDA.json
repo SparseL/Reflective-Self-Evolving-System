@@ -1,0 +1,15 @@
+{
+  "algorithm": "HDA",
+  "dataset": "Enron_sample",
+  "objective": 0.2596379707722633,
+  "metrics": {
+    "time_select": 1.5139901638031006,
+    "time_anc": 4.911945819854736,
+    "anc_prefix_k": 0.7988465727788701,
+    "fht_50": 727.0,
+    "fht_10": 1588.0,
+    "lcc_at_k_frac": 0.8052121617106582,
+    "k": 448
+  },
+  "created_at": "2026-01-18T23:18:37"
+}

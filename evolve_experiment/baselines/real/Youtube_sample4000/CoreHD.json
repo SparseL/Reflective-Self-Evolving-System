@@ -1,0 +1,15 @@
+{
+  "algorithm": "CoreHD",
+  "dataset": "Youtube_sample4000",
+  "objective": 0.12324392152202378,
+  "metrics": {
+    "time_select": 112.65631794929504,
+    "time_anc": 11.462296485900879,
+    "anc_prefix_k": 0.5872584360633519,
+    "fht_50": 410.0,
+    "fht_10": 1119.0,
+    "lcc_at_k_frac": 0.6298701298701299,
+    "k": 577
+  },
+  "created_at": "2026-01-27T16:28:10"
+}

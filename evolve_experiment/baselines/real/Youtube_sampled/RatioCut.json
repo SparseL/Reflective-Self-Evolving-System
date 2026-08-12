@@ -1,0 +1,30 @@
+{
+  "algorithm": "RatioCut",
+  "dataset": "Youtube_sampled",
+  "objective": 0.10270224594630269,
+  "metrics": {
+    "time_select": 1.3250489234924316,
+    "time_anc": 6.758102178573608,
+    "anc_prefix_k": 0.523469412447849,
+    "fht_50": 167.0,
+    "fht_10": 707.0,
+    "lcc_at_k_frac": 0.558228730822873,
+    "k": 430,
+    "detailed_results": [
+      {
+        "instance": "Youtube_sampled",
+        "objective": 0.10270224594630269,
+        "metrics": {
+          "time_select": 1.3250489234924316,
+          "time_anc": 6.758102178573608,
+          "anc_prefix_k": 0.523469412447849,
+          "fht_50": 167.0,
+          "fht_10": 707.0,
+          "lcc_at_k_frac": 0.558228730822873,
+          "k": 430
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T21:50:22"
+}

@@ -1,0 +1,30 @@
+{
+  "algorithm": "MinSum",
+  "dataset": "Youtube_sample4000",
+  "objective": 0.12372458247923017,
+  "metrics": {
+    "time_select": 273.17319440841675,
+    "time_anc": 24.000943183898926,
+    "anc_prefix_k": 0.5872584360633519,
+    "fht_50": 410.0,
+    "fht_10": 1120.0,
+    "lcc_at_k_frac": 0.6298701298701299,
+    "k": 577,
+    "detailed_results": [
+      {
+        "instance": "Youtube_sample4000",
+        "objective": 0.12372458247923017,
+        "metrics": {
+          "time_select": 273.17319440841675,
+          "time_anc": 24.000943183898926,
+          "anc_prefix_k": 0.5872584360633519,
+          "fht_50": 410.0,
+          "fht_10": 1120.0,
+          "lcc_at_k_frac": 0.6298701298701299,
+          "k": 577
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-12T00:53:01"
+}

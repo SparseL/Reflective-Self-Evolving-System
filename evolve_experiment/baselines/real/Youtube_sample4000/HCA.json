@@ -1,0 +1,30 @@
+{
+  "algorithm": "HCA",
+  "dataset": "Youtube_sample4000",
+  "objective": 0.10670006014270977,
+  "metrics": {
+    "time_select": 9877.191366910934,
+    "time_anc": 7.066303491592407,
+    "anc_prefix_k": 0.5763951247415453,
+    "fht_50": 385.0,
+    "fht_10": 933.0,
+    "lcc_at_k_frac": 0.6171428571428571,
+    "k": 577,
+    "detailed_results": [
+      {
+        "instance": "Youtube_sample4000",
+        "objective": 0.10670006014270977,
+        "metrics": {
+          "time_select": 9877.191366910934,
+          "time_anc": 7.066303491592407,
+          "anc_prefix_k": 0.5763951247415453,
+          "fht_50": 385.0,
+          "fht_10": 933.0,
+          "lcc_at_k_frac": 0.6171428571428571,
+          "k": 577
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-14T10:11:04"
+}

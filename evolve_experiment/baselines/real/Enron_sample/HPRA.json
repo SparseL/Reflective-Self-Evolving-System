@@ -1,0 +1,30 @@
+{
+  "algorithm": "HPRA",
+  "dataset": "Enron_sample",
+  "objective": 0.2612558861211593,
+  "metrics": {
+    "time_select": 0.5319702625274658,
+    "time_anc": 5.039393901824951,
+    "anc_prefix_k": 0.7853335082039529,
+    "fht_50": 701.0,
+    "fht_10": 1634.0,
+    "lcc_at_k_frac": 0.8032074841296358,
+    "k": 448,
+    "detailed_results": [
+      {
+        "instance": "Enron_sample",
+        "objective": 0.2612558861211593,
+        "metrics": {
+          "time_select": 0.5319702625274658,
+          "time_anc": 5.039393901824951,
+          "anc_prefix_k": 0.7853335082039529,
+          "fht_50": 701.0,
+          "fht_10": 1634.0,
+          "lcc_at_k_frac": 0.8032074841296358,
+          "k": 448
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:32:26"
+}

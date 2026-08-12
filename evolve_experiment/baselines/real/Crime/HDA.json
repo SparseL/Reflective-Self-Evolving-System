@@ -1,0 +1,30 @@
+{
+  "algorithm": "HDA",
+  "dataset": "Crime",
+  "objective": 0.08732583785784856,
+  "metrics": {
+    "time_select": 0.12615966796875,
+    "time_anc": 0.2235715389251709,
+    "anc_prefix_k": 0.576948848363994,
+    "fht_50": 78.0,
+    "fht_10": 118.0,
+    "lcc_at_k_frac": 0.18094089264173704,
+    "k": 124,
+    "detailed_results": [
+      {
+        "instance": "Crime",
+        "objective": 0.08732583785784856,
+        "metrics": {
+          "time_select": 0.12615966796875,
+          "time_anc": 0.2235715389251709,
+          "anc_prefix_k": 0.576948848363994,
+          "fht_50": 78.0,
+          "fht_10": 118.0,
+          "lcc_at_k_frac": 0.18094089264173704,
+          "k": 124
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:26:48"
+}

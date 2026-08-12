@@ -1,0 +1,30 @@
+{
+  "algorithm": "HBA",
+  "dataset": "HI-II-14",
+  "objective": 0.03326613450144615,
+  "metrics": {
+    "time_select": 47792.57228851318,
+    "time_anc": 10.87412428855896,
+    "anc_prefix_k": 0.22193058465535034,
+    "fht_50": 103.0,
+    "fht_10": 338.0,
+    "lcc_at_k_frac": 0.0024009603841536613,
+    "k": 624,
+    "detailed_results": [
+      {
+        "instance": "HI-II-14",
+        "objective": 0.03326613450144615,
+        "metrics": {
+          "time_select": 47792.57228851318,
+          "time_anc": 10.87412428855896,
+          "anc_prefix_k": 0.22193058465535034,
+          "fht_50": 103.0,
+          "fht_10": 338.0,
+          "lcc_at_k_frac": 0.0024009603841536613,
+          "k": 624
+        }
+      }
+    ]
+  },
+  "created_at": "2026-07-13T09:55:04"
+}

@@ -1,0 +1,30 @@
+{
+  "algorithm": "BPD",
+  "dataset": "Crime",
+  "objective": 0.09896957439291648,
+  "metrics": {
+    "time_select": 31.52660322189331,
+    "time_anc": 0.3490169048309326,
+    "anc_prefix_k": 0.6535494153516002,
+    "fht_50": 96.0,
+    "fht_10": 118.0,
+    "lcc_at_k_frac": 0.14234016887816647,
+    "k": 124,
+    "detailed_results": [
+      {
+        "instance": "Crime",
+        "objective": 0.09896957439291648,
+        "metrics": {
+          "time_select": 31.52660322189331,
+          "time_anc": 0.3490169048309326,
+          "anc_prefix_k": 0.6535494153516002,
+          "fht_50": 96.0,
+          "fht_10": 118.0,
+          "lcc_at_k_frac": 0.14234016887816647,
+          "k": 124
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:28:25"
+}

@@ -1,0 +1,30 @@
+{
+  "algorithm": "GND",
+  "dataset": "HI-II-14_sampled",
+  "objective": 0.0825874085435886,
+  "metrics": {
+    "time_select": 2.795433759689331,
+    "time_anc": 5.851405143737793,
+    "anc_prefix_k": 0.5312861180887456,
+    "fht_50": 238.0,
+    "fht_10": 500.0,
+    "lcc_at_k_frac": 0.411,
+    "k": 450,
+    "detailed_results": [
+      {
+        "instance": "HI-II-14_sampled",
+        "objective": 0.0825874085435886,
+        "metrics": {
+          "time_select": 2.795433759689331,
+          "time_anc": 5.851405143737793,
+          "anc_prefix_k": 0.5312861180887456,
+          "fht_50": 238.0,
+          "fht_10": 500.0,
+          "lcc_at_k_frac": 0.411,
+          "k": 450
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T00:05:08"
+}

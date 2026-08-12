@@ -1,0 +1,15 @@
+{
+  "algorithm": "CI(l=3)",
+  "dataset": "HI-II-14_sampled",
+  "objective": 0.056034549442406725,
+  "metrics": {
+    "time_select": 74.09353065490723,
+    "time_anc": 4.773047685623169,
+    "anc_prefix_k": 0.3723683593296531,
+    "fht_50": 138.0,
+    "fht_10": 374.0,
+    "lcc_at_k_frac": 0.007,
+    "k": 450
+  },
+  "created_at": "2026-01-16T01:43:07"
+}

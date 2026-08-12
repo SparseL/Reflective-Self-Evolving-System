@@ -1,0 +1,15 @@
+{
+  "algorithm": "HDA",
+  "dataset": "Youtube_sampled",
+  "objective": 0.09296043096238991,
+  "metrics": {
+    "time_select": 1.9691352844238281,
+    "time_anc": 7.400929927825928,
+    "anc_prefix_k": 0.472288809713976,
+    "fht_50": 177.0,
+    "fht_10": 716.0,
+    "lcc_at_k_frac": 0.5449790794979079,
+    "k": 430
+  },
+  "created_at": "2026-01-26T23:06:12"
+}

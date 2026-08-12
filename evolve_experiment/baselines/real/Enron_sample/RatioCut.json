@@ -1,0 +1,30 @@
+{
+  "algorithm": "RatioCut",
+  "dataset": "Enron_sample",
+  "objective": 0.24814715738365306,
+  "metrics": {
+    "time_select": 1.7438883781433105,
+    "time_anc": 5.647082328796387,
+    "anc_prefix_k": 0.8018269053019561,
+    "fht_50": 701.0,
+    "fht_10": 1342.0,
+    "lcc_at_k_frac": 0.799198128967591,
+    "k": 448,
+    "detailed_results": [
+      {
+        "instance": "Enron_sample",
+        "objective": 0.24814715738365306,
+        "metrics": {
+          "time_select": 1.7438883781433105,
+          "time_anc": 5.647082328796387,
+          "anc_prefix_k": 0.8018269053019561,
+          "fht_50": 701.0,
+          "fht_10": 1342.0,
+          "lcc_at_k_frac": 0.799198128967591,
+          "k": 448
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T10:32:34"
+}

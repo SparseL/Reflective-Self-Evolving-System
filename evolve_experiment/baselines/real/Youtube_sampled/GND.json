@@ -1,0 +1,30 @@
+{
+  "algorithm": "GND",
+  "dataset": "Youtube_sampled",
+  "objective": 0.0915513827680331,
+  "metrics": {
+    "time_select": 4.35166597366333,
+    "time_anc": 7.576125860214233,
+    "anc_prefix_k": 0.5119545614724655,
+    "fht_50": 163.0,
+    "fht_10": 549.0,
+    "lcc_at_k_frac": 0.5439330543933054,
+    "k": 430,
+    "detailed_results": [
+      {
+        "instance": "Youtube_sampled",
+        "objective": 0.0915513827680331,
+        "metrics": {
+          "time_select": 4.35166597366333,
+          "time_anc": 7.576125860214233,
+          "anc_prefix_k": 0.5119545614724655,
+          "fht_50": 163.0,
+          "fht_10": 549.0,
+          "lcc_at_k_frac": 0.5439330543933054,
+          "k": 430
+        }
+      }
+    ]
+  },
+  "created_at": "2026-04-21T21:50:34"
+}
