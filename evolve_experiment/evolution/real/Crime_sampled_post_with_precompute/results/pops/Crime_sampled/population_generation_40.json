@@ -1,0 +1,220 @@
+[
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    inv_cluster_n = 1 - norm(cluster)\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # Revised weights: emphasize core and betweenness, reduce eigenvector & degree\n    w_betw = 0.40 * (1 + bridge_ratio / (bridge_ratio + 1))\n    w_core = 0.35 * (1 + max_core / (max_core + 3))\n    w_deg = 0.10 * (1 + degree_variance / (degree_variance + 3))\n    w_eig = 0.10 * (1 + diameter_lcc / (diameter_lcc + 5))\n    w_inv_clust = 0.05 * (1 + apl_lcc / (apl_lcc + 5))\n\n    weights = np.array([w_betw, w_core, w_deg, w_eig, w_inv_clust])\n    weights /= weights.sum()\n\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        eig_n,\n        inv_cluster_n\n    ]).T\n\n    fused_scores = metric_matrix.dot(weights)\n\n    # Lower alpha to favor neighbor influence less (later-stage fragmentation)\n    alpha = np.clip(0.12 + 0.38 * (bridge_ratio * apl_lcc / (apl_lcc + 4)), 0.15, 0.35)\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08497,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "9cafe01d1027dd433fa8cab3f7c0b035"
+               ],
+               "anc_prefix_k": 0.5635295824401897,
+               "fht_50": 76.0,
+               "fht_10": 113.0,
+               "lcc_at_k_frac": 0.13751507840772015,
+               "k": 124
+          },
+          "problem": null,
+          "time": 16.177099227905273,
+          "time_select": 15.239551305770874,
+          "time_anc": 0.7134394645690918,
+          "unique_id": "7af6c52a35c580f295f3838db3590ed6"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    inv_cluster_n = 1 - norm(cluster)\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New weights emphasizing eigenvector and degree more, betweenness and core less\n    w_eig = 0.45 * (1 + diameter_lcc / (diameter_lcc + 5))\n    w_deg = 0.30 * (1 + degree_variance / (degree_variance + 3))\n    w_betw = 0.15 * (1 + bridge_ratio / (bridge_ratio + 1))\n    w_core = 0.08 * (1 + max_core / (max_core + 3))\n    w_inv_clust = 0.02 * (1 + apl_lcc / (apl_lcc + 5))\n\n    weights = np.array([w_betw, w_core, w_deg, w_eig, w_inv_clust])\n    weights /= weights.sum()\n\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        eig_n,\n        inv_cluster_n\n    ]).T\n\n    fused_scores = metric_matrix.dot(weights)\n\n    # Recalibrated alpha to slightly favor neighbor clustering, boosting early fragmentation\n    alpha = np.clip(0.18 + 0.52 * (bridge_ratio * apl_lcc / (apl_lcc + 4)), 0.30, 0.60)\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08499,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "dd8c9d1f2eaa1f9e2bb4ccdfaa58976a"
+               ],
+               "anc_prefix_k": 0.5635237785338364,
+               "fht_50": 74.0,
+               "fht_10": 113.0,
+               "lcc_at_k_frac": 0.13751507840772015,
+               "k": 124
+          },
+          "problem": null,
+          "time": 14.834084033966064,
+          "time_select": 14.120206356048584,
+          "time_anc": 0.43598413467407227,
+          "unique_id": "9cafe01d1027dd433fa8cab3f7c0b035"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New dynamic weights emphasizing inverse eig and cluster, and less on betw and core\n    w_inv_eig = 0.35 * (1 + apl_lcc/(apl_lcc + 3))\n    w_inv_clust = 0.3 * (1 + diameter_lcc/(diameter_lcc + 2))\n    w_betw = 0.15 * (1 + bridge_ratio)\n    w_deg = 0.15 * (1 + degree_variance)\n    w_core = 0.05 * (1 + max_core/(max_core + 2))\n\n    weights = np.array([w_inv_eig, w_inv_clust, w_betw, w_deg, w_core])\n    weights /= weights.sum()\n\n    # Additive fusion of normalized metrics instead of multiplicative\n    metric_vector = np.vstack([\n        inv_eig_n,\n        inv_cluster_n,\n        betw_n,\n        deg_n,\n        core_n\n    ]).T\n\n    fused_scores = np.dot(metric_vector, weights)\n\n    # Linear combination with neighbor inverse clustering (instead of exponentiation)\n    alpha = np.clip(0.4 + 0.5 * (bridge_ratio * diameter_lcc / (diameter_lcc + 4)), 0.4, 0.85)\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08512,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "4641a0ebd40f1adc21a511932bbfa7c4"
+               ],
+               "anc_prefix_k": 0.5637903587669438,
+               "fht_50": 75.0,
+               "fht_10": 114.0,
+               "lcc_at_k_frac": 0.1640530759951749,
+               "k": 124
+          },
+          "problem": null,
+          "time": 16.225821256637573,
+          "time_select": 15.416958332061768,
+          "time_anc": 0.46270060539245605,
+          "unique_id": "1b3f57344e7a712b58423c75a85ab478"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New weights emphasizing inverse eigenvector and core, less on betweenness and neighbor clustering\n    w_inv_eig = 0.4 * (1 + apl_lcc / (apl_lcc + 2))\n    w_core = 0.3 * (1 + max_core / (max_core + 3))\n    w_deg = 0.15 * (1 + degree_variance)\n    w_betw = 0.1 * (1 + bridge_ratio)\n    w_inv_clust = 0.05 * (1 + diameter_lcc / (diameter_lcc + 4))\n\n    weights = np.array([w_inv_eig, w_core, w_deg, w_betw, w_inv_clust])\n    weights /= weights.sum()\n\n    # Additive fusion instead of multiplicative, with small offsets to avoid zeroing\n    metric_vector = np.vstack([\n        inv_eig_n + 0.1,\n        core_n + 0.1,\n        deg_n + 0.1,\n        betw_n + 0.1,\n        inv_cluster_n + 0.1\n    ]).T\n\n    fused_scores = np.dot(metric_vector, weights)\n\n    # Combine linearly with neighbor inverse clustering, controlled by alpha\n    alpha = np.clip(0.4 + 0.4 * (bridge_ratio * diameter_lcc / (diameter_lcc + 3)), 0.4, 0.8)\n    final_scores = alpha * fused_scores + (1 - alpha) * (neighbor_inv_clust_norm + 0.1)\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08517,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "4641a0ebd40f1adc21a511932bbfa7c4"
+               ],
+               "anc_prefix_k": 0.5645481092611924,
+               "fht_50": 75.0,
+               "fht_10": 114.0,
+               "lcc_at_k_frac": 0.16164053075995174,
+               "k": 124
+          },
+          "problem": null,
+          "time": 12.606218576431274,
+          "time_select": 11.871869087219238,
+          "time_anc": 0.4864847660064697,
+          "unique_id": "a5b57c5458b02c4d8926295ee749ea62"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs) + 1e-6\n    betw_n = norm(betw) + 1e-6\n    core_n = norm(core) + 1e-6\n    eig_n = norm(eig) + 1e-6\n    inv_cluster_n = 1 - norm(cluster) + 1e-6\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum) + 1e-6\n\n    # Dynamic weights tuned by global features (small tweak from Algorithm 2)\n    w_betw = 0.38 * (1 + bridge_ratio)\n    w_deg = 0.28 * (1 + degree_variance / (degree_variance + 5))\n    w_inv_clust = 0.17 * (1 + diameter_lcc / (diameter_lcc + 3))\n    w_inv_eig = 0.10 * (1 + apl_lcc / (apl_lcc + 4))\n    w_core = 0.07 * (1 + max_core / (max_core + 3))\n\n    weights = np.array([w_betw, w_deg, w_inv_clust, w_inv_eig, w_core])\n    weights /= weights.sum()\n\n    metric_vector = np.vstack([\n        betw_n + 0.1,\n        deg_n + 0.1,\n        inv_cluster_n + 0.1,\n        (1 - eig_n) + 0.1,\n        core_n + 0.1\n    ]).T\n\n    fused_scores = np.prod(metric_vector ** weights, axis=1)\n\n    # Balance local neighborhood fragmentation impact with dynamic beta tuned slightly higher for earlier disruption\n    beta = np.clip(0.35 + 0.55 * (bridge_ratio * diameter_lcc / (diameter_lcc + 4)), 0.35, 0.8)\n    final_scores = (fused_scores ** beta) * (neighbor_inv_clust_norm + 0.1) ** (1 - beta)\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.0852,
+          "other_inf": {
+               "operator": "t2",
+               "parent": [
+                    "8facc055f14c59f476722efe4bc1a62a",
+                    "4641a0ebd40f1adc21a511932bbfa7c4",
+                    "78a7235898a49a6ff19b4e547047b7af"
+               ],
+               "anc_prefix_k": 0.564331132454448,
+               "fht_50": 75.0,
+               "fht_10": 116.0,
+               "lcc_at_k_frac": 0.158021712907117,
+               "k": 124
+          },
+          "problem": null,
+          "time": 9.88864016532898,
+          "time_select": 9.070827007293701,
+          "time_anc": 0.38901185989379883,
+          "unique_id": "607741cbf81a276f6e980ac1eaa06193"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New weights: reduce betweenness and core, increase inverse clustering and inverse eigenvector, higher weight on neighborhood fragmentation\n    w_betw = 0.20 * (1 + bridge_ratio)\n    w_core = 0.15 * (1 + max_core / (max_core + 2))\n    w_deg = 0.15 * (1 + degree_variance)\n    w_inv_eig = 0.30 * (1 + apl_lcc / (apl_lcc + 3))\n    w_inv_clust = 0.20 * (1 + diameter_lcc / (diameter_lcc + 4))\n\n    weights = np.array([w_betw, w_core, w_deg, w_inv_eig, w_inv_clust])\n    weights /= weights.sum()\n\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        inv_eig_n,\n        inv_cluster_n\n    ]).T\n\n    fused_scores = metric_matrix.dot(weights)\n\n    # Adaptive alpha blending fused_scores and neighborhood fragmentation score,\n    # favoring neighborhood fragmentation more when bridge_ratio is high for faster early disruption\n    alpha = np.clip(0.4 + 0.4 * (bridge_ratio * diameter_lcc / (diameter_lcc + 5)), 0.35, 0.75)\n\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08521,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "bd2e6ae69a30721b5f9bccc4adfa4863"
+               ],
+               "anc_prefix_k": 0.5645722412928716,
+               "fht_50": 75.0,
+               "fht_10": 113.0,
+               "lcc_at_k_frac": 0.16164053075995174,
+               "k": 124
+          },
+          "problem": null,
+          "time": 16.984339714050293,
+          "time_select": 15.876176118850708,
+          "time_anc": 0.7726120948791504,
+          "unique_id": "2cbbe125d3a8db7aa0ffa4f365394412"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New weights: emphasize degree and clustering, reduce betweenness and eigenvector impact, moderate core weight\n    w_deg = 0.35 * (1 + degree_variance)\n    w_inv_clust = 0.30 * (1 + diameter_lcc / (diameter_lcc + 4))\n    w_core = 0.15 * (1 + max_core / (max_core + 2))\n    w_betw = 0.10 * (1 + bridge_ratio)\n    w_inv_eig = 0.10 * (1 + apl_lcc / (apl_lcc + 3))\n\n    weights = np.array([w_betw, w_core, w_deg, w_inv_eig, w_inv_clust])\n    weights /= weights.sum()\n\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        inv_eig_n,\n        inv_cluster_n\n    ]).T\n\n    fused_scores = metric_matrix.dot(weights)\n\n    # Adaptive alpha blending fused_scores and neighborhood fragmentation score,\n    # alpha lower when bridge_ratio is low to favor fused_scores more\n    alpha = np.clip(0.25 + 0.5 * (bridge_ratio * diameter_lcc / (diameter_lcc + 5)), 0.25, 0.65)\n\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08525,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "2cbbe125d3a8db7aa0ffa4f365394412"
+               ],
+               "anc_prefix_k": 0.5649450306624837,
+               "fht_50": 75.0,
+               "fht_10": 114.0,
+               "lcc_at_k_frac": 0.16164053075995174,
+               "k": 124
+          },
+          "problem": null,
+          "time": 14.277288913726807,
+          "time_select": 13.435368299484253,
+          "time_anc": 0.6360197067260742,
+          "unique_id": "a1ac9efa9b3632b8372314baac4c4fc0"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    # Extract raw metric arrays\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    # Normalize metrics\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n    inv_cluster_n = 1 - cluster_n\n\n    # Compute local fragmentation impact per node (sum of 1 - clustering of neighbors)\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    local_frag = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    local_frag_n = norm(local_frag) + 1e-9  # avoid div by zero in harmonic mean\n\n    # Centrality fusion: weighted average emphasizing betweenness, core, and inverse clustering\n    w_betw = 0.35 * (1 + bridge_ratio)\n    w_core = 0.30 * (1 + max_core / (max_core + 1))\n    w_inv_clust = 0.20 * (1 + diameter_lcc / (diameter_lcc + 3))\n    w_deg = 0.10 * (1 + degree_variance)\n    w_eig = 0.05 * (1 + apl_lcc / (apl_lcc + 2))\n\n    weights = np.array([w_betw, w_core, w_inv_clust, w_deg, w_eig])\n    weights /= weights.sum()\n\n    # Construct centrality matrix\n    centrality_matrix = np.vstack([\n        betw_n + 1e-9,\n        core_n + 1e-9,\n        inv_cluster_n + 1e-9,\n        deg_n + 1e-9,\n        eig_n + 1e-9\n    ]).T\n\n    centrality_scores = centrality_matrix.dot(weights)\n\n    # Dynamic alpha balances centrality vs local fragmentation based on degree variance and bridge_ratio\n    alpha = np.clip(0.5 + 0.4 * bridge_ratio - 0.3 * (degree_variance / (avg_degree + 1e-9)), 0.3, 0.8)\n\n    # Harmonic mean fusion to emphasize nodes strong in both centrality and fragmentation impact\n    fused_scores = 2 / (alpha / centrality_scores + (1 - alpha) / local_frag_n)\n\n    max_idx = np.argmax(fused_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08527,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "4641a0ebd40f1adc21a511932bbfa7c4",
+                    "a5b57c5458b02c4d8926295ee749ea62",
+                    "2cbbe125d3a8db7aa0ffa4f365394412",
+                    "6d2622b22390a22ba895b6f7bce9ed54",
+                    "fcd87918bf124faa4b1d0074b2ae264a"
+               ],
+               "anc_prefix_k": 0.5654791075349649,
+               "fht_50": 73.0,
+               "fht_10": 114.0,
+               "lcc_at_k_frac": 0.16164053075995174,
+               "k": 124
+          },
+          "problem": null,
+          "time": 14.412230491638184,
+          "time_select": 13.66714072227478,
+          "time_anc": 0.4275827407836914,
+          "unique_id": "dd8dbb6110f27f72549583702d11eef1"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs) + 1e-8\n    betw_n = norm(betw) + 1e-8\n    core_n = norm(core) + 1e-8\n    eig_n = norm(eig) + 1e-8\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum) + 1e-8\n\n    # Dynamic weights tuned to balance centrality and fragmentation\n    w_betw = 0.35 * (1 + bridge_ratio)\n    w_core = 0.25 * (1 + max_core / (max_core + 3))\n    w_deg = 0.2 * (1 + degree_variance / (degree_variance + 5))\n    w_inv_eig = 0.15 * (1 + apl_lcc / (apl_lcc + 4))\n    w_inv_cluster = 0.05 * (1 + diameter_lcc / (diameter_lcc + 6))\n\n    weights = np.array([w_betw, w_core, w_deg, w_inv_eig, w_inv_cluster])\n    weights /= weights.sum()\n\n    # Multiplicative fusion of core centralities plus additive neighbor fragmentation with smooth exponentiation\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        inv_eig_n,\n        inv_cluster_n\n    ]).T + 0.05  # offset to avoid zeros\n\n    fused_scores = np.prod(metric_matrix ** weights, axis=1)\n\n    alpha = np.clip(0.3 + 0.6 * (bridge_ratio * apl_lcc / (apl_lcc + 4)), 0.4, 0.85)\n    final_scores = (fused_scores ** alpha) * (neighbor_inv_clust_norm + 0.05) ** (1 - alpha)\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08528,
+          "other_inf": {
+               "operator": "t2",
+               "parent": [
+                    "05bd66da90fbb2e2915a90f410de73d5",
+                    "8facc055f14c59f476722efe4bc1a62a",
+                    "4641a0ebd40f1adc21a511932bbfa7c4"
+               ],
+               "anc_prefix_k": 0.5650868386577947,
+               "fht_50": 74.0,
+               "fht_10": 114.0,
+               "lcc_at_k_frac": 0.16646562123039807,
+               "k": 124
+          },
+          "problem": null,
+          "time": 9.563524007797241,
+          "time_select": 8.778152704238892,
+          "time_anc": 0.34488797187805176,
+          "unique_id": "f027c08c4aad1cdced2091e06ce93119"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.ptp()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_cluster_n = 1 - cluster_n\n    inv_eig_n = 1 - eig_n\n\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # New weights prioritizing eigenvector and inverse clustering, lowering betweenness and core weights\n    w_betw = 0.2 * (1 + bridge_ratio)\n    w_core = 0.15 * (1 + max_core / (max_core + 2))\n    w_deg = 0.15 * (1 + degree_variance)\n    w_inv_eig = 0.35 * (1 + apl_lcc / (apl_lcc + 2))\n    w_inv_clust = 0.15 * (1 + diameter_lcc / (diameter_lcc + 3))\n\n    weights = np.array([w_betw, w_core, w_deg, w_inv_eig, w_inv_clust])\n    weights /= weights.sum()\n\n    # Metric matrix ordered as: betw_n, core_n, deg_n, inv_eig_n, inv_cluster_n\n    metric_matrix = np.vstack([\n        betw_n,\n        core_n,\n        deg_n,\n        inv_eig_n,\n        inv_cluster_n\n    ]).T\n\n    fused_scores = metric_matrix.dot(weights)\n\n    # Increase the alpha blending toward neighbor_inv_clust_norm to emphasize local fragmentation\n    alpha = np.clip(0.1 + 0.7 * (bridge_ratio * apl_lcc / (apl_lcc + 4)), 0.5, 0.8)\n    final_scores = alpha * fused_scores + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.0853,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "ecdd9d3d6b510ef3e226e1417132b304"
+               ],
+               "anc_prefix_k": 0.5650254864331457,
+               "fht_50": 75.0,
+               "fht_10": 113.0,
+               "lcc_at_k_frac": 0.16164053075995174,
+               "k": 124
+          },
+          "problem": null,
+          "time": 12.84228777885437,
+          "time_select": 12.088627815246582,
+          "time_anc": 0.4563789367675781,
+          "unique_id": "05bd66da90fbb2e2915a90f410de73d5"
+     }
+]

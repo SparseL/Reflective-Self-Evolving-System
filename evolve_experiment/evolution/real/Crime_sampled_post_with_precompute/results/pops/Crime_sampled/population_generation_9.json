@@ -1,0 +1,226 @@
+[
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_betw_n = 1 - betw_n\n    inv_deg_n = 1 - deg_n\n\n    # Different weight emphasis:\n    # Lower betweenness prioritized (inverse), stronger eigenvector, moderate clustering and core,\n    # degree is less emphasized but inverted to prefer low-degree nodes that might be bridges\n    w_betw = 0.35 * (1 - bridge_ratio)\n    w_eig = 0.30 * (1 + 1 / (apl_lcc + 1))\n    w_cluster = 0.20 * (1 + np.log1p(apl_lcc))\n    w_core = 0.10 * (1 + max_core / (max_core + 1))\n    w_deg = 0.05 * (1 - degree_variance)\n\n    weights = np.array([w_betw, w_deg, w_core, w_eig, w_cluster])\n    weights = np.clip(weights, 1e-3, None)  # avoid zero weights\n    weights /= weights.sum()\n\n    score = (w_betw * inv_betw_n +\n             w_deg * inv_deg_n +\n             w_core * core_n +\n             w_eig * eig_n +\n             w_cluster * cluster_n)\n\n    # Local fragmentation: sum inverse clustering of neighbors (high means neighbors are less clustered)\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_cluster_sum = np.array([sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes], dtype=float)\n    neighbor_inv_cluster_sum_n = norm(neighbor_inv_cluster_sum)\n\n    # Adaptive mixing parameter, inverted compared to original to favor local fragmentation when degree variance is low\n    alpha = np.clip(0.7 - 0.4 * (degree_variance / (avg_degree + 1e-9)) * (max_core / (max_core + 1)), 0.2, 0.7)\n\n    final_scores = alpha * score + (1 - alpha) * neighbor_inv_cluster_sum_n\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08537,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "9bc34faae6f3a5044675f6cd2f9dc06c"
+               ],
+               "anc_prefix_k": 0.5661508098305673,
+               "fht_50": 75.0,
+               "fht_10": 117.0,
+               "lcc_at_k_frac": 0.14837153196622438,
+               "k": 124
+          },
+          "problem": null,
+          "time": 10.350253820419312,
+          "time_select": 9.73181700706482,
+          "time_anc": 0.3315129280090332,
+          "unique_id": "832c63546bef8c41d67a22dca23184a4"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    inv_eig_n = 1 - eig_n\n    inv_cluster_n = 1 - cluster_n\n\n    # New weight assignments prioritizing inverse eigenvector and inverse clustering strongly,\n    # moderate betweenness and degree, and less core influence\n    w_inv_eig = 0.35 * (1 + diameter_lcc / (diameter_lcc + 1))\n    w_inv_clust = 0.30 * (1 + bridge_ratio)\n    w_betw = 0.20 * (1 + 1 / (apl_lcc + 1))\n    w_deg = 0.10 * (1 + degree_variance)\n    w_core = 0.05 * (1 + max_core / (max_core + 1))\n\n    weights = np.array([w_inv_eig, w_inv_clust, w_betw, w_deg, w_core])\n    weights /= weights.sum()\n\n    score = (w_inv_eig * inv_eig_n +\n             w_inv_clust * inv_cluster_n +\n             w_betw * betw_n +\n             w_deg * deg_n +\n             w_core * core_n)\n\n    # Local fragmentation proxy: sum of neighbors' inverse clustering (favoring nodes with neighbors in sparse areas)\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_clust_sum = np.array([\n        sum((1 - graph.nodes[nei]['clustering']) for nei in neighbors_dict[n]) for n in unvisited_nodes\n    ], dtype=float)\n    neighbor_inv_clust_norm = norm(neighbor_inv_clust_sum)\n\n    # Adaptive alpha favoring local fragmentation more in graphs with higher diameter and bridge ratio\n    alpha = np.clip(0.3 + 0.5 * (diameter_lcc / (diameter_lcc + 10)) * bridge_ratio, 0.4, 0.7)\n\n    final_scores = alpha * score + (1 - alpha) * neighbor_inv_clust_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08569,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "9bc34faae6f3a5044675f6cd2f9dc06c"
+               ],
+               "anc_prefix_k": 0.5675451807087364,
+               "fht_50": 75.0,
+               "fht_10": 117.0,
+               "lcc_at_k_frac": 0.1640530759951749,
+               "k": 124
+          },
+          "problem": null,
+          "time": 9.909975528717041,
+          "time_select": 9.243130683898926,
+          "time_anc": 0.39142942428588867,
+          "unique_id": "928be0dd4e39c63ef23137011a106c4f"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    # Weights reversed from original: prioritize clustering and eigenvector,\n    # penalize degree and core lightly, moderate betweenness\n    w_cluster = 0.35 * (1 + np.log1p(apl_lcc))\n    w_eig = 0.30 * (1 + 1 / (apl_lcc + 1))\n    w_betw = 0.20 * (1 + bridge_ratio)\n    w_deg = 0.10 * (1 + degree_variance)\n    w_core = 0.05 * (1 + max_core / (max_core + 1))\n\n    weights = np.array([w_cluster, w_eig, w_betw, w_deg, w_core])\n    weights /= weights.sum()\n\n    # Emphasize clustering and eigenvector directly, add betweenness,\n    # lightly add degree and core\n    centrality_scores = (w_cluster * cluster_n +\n                         w_eig * eig_n +\n                         w_betw * betw_n +\n                         w_deg * deg_n +\n                         w_core * core_n)\n\n    # Local fragmentation impact: sum of inverse clustering of neighbors,\n    # to emphasize nodes whose neighbors are less clustered (potential bridges)\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_inv_cluster_sum = np.array([sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes], dtype=float)\n\n    local_frag_impact = norm(neighbor_inv_cluster_sum)\n\n    # Adaptive mixing parameter skewed towards local fragmentation for deeper fragmentation\n    alpha = np.clip(0.4 + 0.5 * (degree_variance / (avg_degree + 1e-9)) * (max_core / (max_core + 1)), 0.2, 0.7)\n\n    final_scores = (1 - alpha) * centrality_scores + alpha * local_frag_impact\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.08575,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "9bc34faae6f3a5044675f6cd2f9dc06c"
+               ],
+               "anc_prefix_k": 0.568438582827994,
+               "fht_50": 75.0,
+               "fht_10": 116.0,
+               "lcc_at_k_frac": 0.15922798552472858,
+               "k": 124
+          },
+          "problem": null,
+          "time": 10.352437734603882,
+          "time_select": 9.754796028137207,
+          "time_anc": 0.361788272857666,
+          "unique_id": "c407c6e42093c0553de1adba43e2ef29"
+     },
+     {
+          "algorithm": "n: max_depth+1 for n in unvisited_nodes",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    from collections import deque\n\n    removed_nodes = set(graph.graph.get('removed_nodes', []))  # nodes already removed\n\n    # Precompute inverse clustering and degree for unvisited nodes\n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    inv_clustering = 1 - clustering\n\n    # Normalize degrees and inverse clustering\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    deg_n = norm(degrees)\n    inv_clus_n = norm(inv_clustering)\n\n    # Combine degree and inverse clustering as base disruption potential\n    base_potential = deg_n * inv_clus_n\n\n    # Influence decay factor: compute shortest path distances to removed nodes for each unvisited node\n    # If no nodes removed yet, set influence decay all to 1 (max)\n    if not removed_nodes:\n        influence_decay = np.ones(len(unvisited_nodes))\n    else:\n        # For efficiency, do BFS from removed nodes up to a max depth (e.g., 3)\n        max_depth = 3\n        dist_map = {n: max_depth+1 for n in unvisited_nodes}  # initialize distances large\n        queue = deque()\n        for rnode in removed_nodes:\n            queue.append((rnode, 0))\n        \n        visited = set(removed_nodes)\n        while queue:\n            current, dist = queue.popleft()\n            if dist > max_depth:\n                continue\n            for nbr in graph.neighbors(current):\n                if nbr in unvisited_nodes and dist < dist_map[nbr]:\n                    dist_map[nbr] = dist\n                if nbr not in visited and dist < max_depth:\n                    visited.add(nbr)\n                    queue.append((nbr, dist+1))\n        \n        # Convert distances to decay factors: closer to removed nodes means lower score to avoid redundancy\n        dist_array = np.array([dist_map[n] for n in unvisited_nodes], dtype=float)\n        decay = np.clip(dist_array, 1, max_depth+1)  # avoid zero division\n        influence_decay = 1 / decay  # inverse distance weighting\n\n        # Normalize influence_decay to [0,1]\n        influence_decay = (influence_decay - influence_decay.min()) / (influence_decay.max() - influence_decay.min() + 1e-9)\n\n    # Final score combines base disruption potential and influence decay (weighting to favor nodes less influenced by removed)\n    w_base = 0.7\n    w_decay = 0.3\n    scores = w_base * base_potential + w_decay * influence_decay\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.09082,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "9e099042a5080e733319a770ec27fac1",
+                    "b0097c6b8751fb2255f5919ef177dcda",
+                    "9e099042a5080e733319a770ec27fac1",
+                    "4b449e643c827a01f53e6096701b21e1",
+                    "9e099042a5080e733319a770ec27fac1"
+               ],
+               "anc_prefix_k": 0.589651014635619,
+               "fht_50": 74.0,
+               "fht_10": 132.0,
+               "lcc_at_k_frac": 0.3823884197828709,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.0170137882232666,
+          "time_select": 0.2846834659576416,
+          "time_anc": 0.43813610076904297,
+          "unique_id": "bdde7ea8910fc72aee9dd0c5a308e227"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    \n    # Extract node features\n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_numbers = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n\n    # Normalize helper\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-12:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n\n    deg_n = normalize(degrees)\n    core_n = normalize(core_numbers)\n    inv_clust_n = 1 - normalize(clustering)\n\n    # Novelty factor: inverse frequency of degree values in unvisited nodes (prefers rare degrees)\n    unique_degs, counts = np.unique(degrees, return_counts=True)\n    deg_freq_map = dict(zip(unique_degs, counts))\n    novelty = np.array([1.0 / deg_freq_map[d] for d in degrees])\n    novelty_n = normalize(novelty)\n\n    # Weights tuned to balance early disruption and long-term fragmentation\n    w_inv_clust = 0.4\n    w_core = 0.35\n    w_novelty = 0.25\n\n    scores = w_inv_clust * inv_clust_n + w_core * core_n + w_novelty * novelty_n\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.09108,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "5c848ccc94247a78745373ef41460802",
+                    "bdde7ea8910fc72aee9dd0c5a308e227",
+                    "8f8be28d422cf4adeaf12a580b5bb478",
+                    "c004cce8216e29d2bebae0a66589bfb3",
+                    "5c848ccc94247a78745373ef41460802"
+               ],
+               "anc_prefix_k": 0.5917512533148059,
+               "fht_50": 73.0,
+               "fht_10": 129.0,
+               "lcc_at_k_frac": 0.4089264173703257,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.4756391048431396,
+          "time_select": 0.8729839324951172,
+          "time_anc": 0.35591888427734375,
+          "unique_id": "e2d3eb685947dcff3d066c005835b947"
+     },
+     {
+          "algorithm": "Select the next node by scoring candidates using a weighted sum of degree, core number, and inverse clustering coefficient (to prioritize hub-like and bridge nodes), penalizing similarity to previously removed nodes via cosine similarity of attributes, balancing disruption focus between hubs and connectors.",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    attrs = ['degree', 'clustering', 'core_number', 'betweenness', 'eigenvector']\n    \n    # Normalize function\n    def normalize(arr):\n        arr = np.array(arr, dtype=float)\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-12:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n    \n    # Extract normalized feature matrix for unvisited nodes\n    feature_matrix = np.array([\n        [graph.nodes[n][att] for att in attrs] for n in unvisited_nodes\n    ], dtype=float)\n    norm_features = np.zeros_like(feature_matrix)\n    for i in range(len(attrs)):\n        norm_features[:, i] = normalize(feature_matrix[:, i])\n    \n    removed_norm_features = graph.graph.get('removed_norm_features', None)\n    \n    # Score weights for new scoring function\n    w_degree = 0.5\n    w_core = 0.3\n    w_inv_clust = 0.2  # inverse clustering\n    \n    inv_clustering = 1.0 - norm_features[:, attrs.index('clustering')]\n    base_scores = (w_degree * norm_features[:, attrs.index('degree')] + \n                   w_core * norm_features[:, attrs.index('core_number')] + \n                   w_inv_clust * inv_clustering)\n    \n    if removed_norm_features is None or len(removed_norm_features) == 0:\n        # No removed nodes yet: pick node with max base score\n        max_idx = np.argmax(base_scores)\n        return unvisited_nodes[max_idx]\n    \n    removed_matrix = np.array(removed_norm_features, dtype=float)\n    \n    def cosine_sim(a, b):\n        denom = (np.linalg.norm(a) * np.linalg.norm(b))\n        if denom < 1e-12:\n            return 0.0\n        return np.dot(a, b) / denom\n    \n    # Penalize candidate nodes by max cosine similarity to removed nodes\n    max_sims = []\n    for i in range(norm_features.shape[0]):\n        sims = [cosine_sim(norm_features[i], r) for r in removed_matrix]\n        max_sims.append(max(sims))\n    max_sims = np.array(max_sims)\n    \n    penalty_factor = 0.7\n    scores = base_scores * (1 - penalty_factor * max_sims)\n    \n    # Select node with max adjusted score\n    max_score = scores.max()\n    candidates = np.where(scores == max_score)[0]\n    \n    if len(candidates) == 1:\n        next_node = unvisited_nodes[candidates[0]]\n    else:\n        # Tie-break with betweenness centrality\n        betw_scores = norm_features[candidates, attrs.index('betweenness')]\n        best_idx = candidates[np.argmax(betw_scores)]\n        next_node = unvisited_nodes[best_idx]\n    \n    return next_node",
+          "objective": 0.0913,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "a2065c1e1163e0a3fbfc414112500c77"
+               ],
+               "anc_prefix_k": 0.5924502363200282,
+               "fht_50": 74.0,
+               "fht_10": 130.0,
+               "lcc_at_k_frac": 0.37997587454764775,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.7965571880340576,
+          "time_select": 0.9614753723144531,
+          "time_anc": 0.5126674175262451,
+          "unique_id": "b2df1c914fb0c43bf6fb7f8126560d73"
+     },
+     {
+          "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    avg_degree = pre.get('avg_degree', 1)\n\n    # Extract node features\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n    inv_clust_n = 1 - cluster_n\n    inv_eig_n = 1 - eig_n\n\n    # Weighted centrality score prioritizing betweenness, core, degree early,\n    # and inverse clustering + eigenvector for fragmentation potential\n    w_betw = 0.30 * (1 + bridge_ratio)\n    w_core = 0.25 * (1 + max_core / (max_core + 1))\n    w_deg = 0.20 * (1 + degree_variance)\n    w_eig = 0.15 * (1 + 1 / (apl_lcc + 1))\n    w_cluster = 0.10 * (1 + np.log1p(apl_lcc))\n\n    weights = np.array([w_betw, w_deg, w_core, w_eig, w_cluster])\n    weights /= weights.sum()\n\n    centrality_scores = (w_betw * betw_n +\n                         w_deg * deg_n +\n                         w_core * core_n +\n                         w_eig * inv_eig_n +\n                         w_cluster * inv_clust_n)\n\n    # Approximate local fragmentation impact:\n    # Sum clustering coefficients of neighbors (lower sum means node is a bridge)\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    neighbor_clusters_sum = np.array([sum(graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes], dtype=float)\n    # Normalize and invert: higher means more fragmentation impact\n    local_frag_impact = norm(-neighbor_clusters_sum)\n\n    # Adaptive mixing parameter to balance centrality and local fragmentation\n    alpha = np.clip(0.5 + 0.4 * (degree_variance / (avg_degree + 1e-9)) * (max_core / (max_core + 1)), 0.3, 0.8)\n\n    final_scores = alpha * centrality_scores + (1 - alpha) * local_frag_impact\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+          "objective": 0.09132,
+          "other_inf": {
+               "operator": "t1",
+               "parent": [
+                    "1971b649c75d17273a066a633f80c87f",
+                    "465225d460d66923518c6f23a4890b14",
+                    "5e6d427477e135fd9d6aa0b00a323705",
+                    "ee7ac5c999cf417ee13c62c51988756e",
+                    "150bc01b0e04415e284e492e34c89c6a"
+               ],
+               "anc_prefix_k": 0.593524734416065,
+               "fht_50": 73.0,
+               "fht_10": 127.0,
+               "lcc_at_k_frac": 0.3606755126658625,
+               "k": 124
+          },
+          "problem": null,
+          "time": 13.097246170043945,
+          "time_select": 12.124297380447388,
+          "time_anc": 0.5750255584716797,
+          "unique_id": "9bc34faae6f3a5044675f6cd2f9dc06c"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    attrs = ['degree', 'clustering', 'core_number', 'betweenness', 'eigenvector']\n    \n    def normalize(arr):\n        arr = np.array(arr, dtype=float)\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-12:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n    \n    # Extract normalized feature matrix for unvisited nodes\n    feature_matrix = np.array([[graph.nodes[n][att] for att in attrs] for n in unvisited_nodes], dtype=float)\n    norm_features = np.zeros_like(feature_matrix)\n    for i in range(len(attrs)):\n        norm_features[:, i] = normalize(feature_matrix[:, i])\n    \n    # Global graph stats for dynamic weighting\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1.0)\n    degree_variance = pre.get('degree_variance', 1.0)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    max_core = pre.get('max_core_k', 1)\n\n    # Dynamic weights influenced by global stats\n    w_deg = 0.5 + 0.3 * min(degree_variance / (avg_degree + 1e-12), 1.0)\n    w_inv_clust = 0.5 * bridge_ratio\n    w_core = 0.5 * (max_core / (max_core + 1.0))\n    \n    # Normalize weights sum to 1 (avoid zero sum)\n    total_w = w_deg + w_inv_clust + w_core\n    if total_w < 1e-12:\n        w_deg, w_inv_clust, w_core = 0.5, 0.3, 0.2\n    else:\n        w_deg /= total_w\n        w_inv_clust /= total_w\n        w_core /= total_w\n\n    inv_clust = 1.0 - norm_features[:, attrs.index('clustering')]\n    \n    # Multiplicative synergy score: (degree * inverse clustering) ^ weighted + core component\n    synergy = (norm_features[:, attrs.index('degree')] * inv_clust) ** w_deg\n    synergy = synergy * (1 + w_inv_clust) + w_core * norm_features[:, attrs.index('core_number')]\n\n    removed_norm_features = graph.graph.get('removed_norm_features', None)\n    \n    def cosine_sim(a, b):\n        denom = (np.linalg.norm(a) * np.linalg.norm(b))\n        if denom < 1e-12:\n            return 0.0\n        return np.dot(a, b) / denom\n\n    # Compute diversity penalty: max cosine similarity to removed nodes and immediate neighbors of removed nodes\n    penalty_factor = 0.65\n    \n    if removed_norm_features is None or len(removed_norm_features) == 0:\n        # No removed nodes yet: pick node with max synergy\n        max_idx = np.argmax(synergy)\n        return unvisited_nodes[max_idx]\n    \n    removed_matrix = np.array(removed_norm_features, dtype=float)\n    \n    # Get neighbors of removed nodes (only those in unvisited)\n    removed_nodes = graph.graph.get('removed_nodes', [])\n    removed_neighbors = set()\n    for rn in removed_nodes:\n        removed_neighbors.update(set(graph.neighbors(rn)))\n    removed_neighbors = removed_neighbors.intersection(unvisited_nodes)\n    \n    # Build normalized features for removed neighbors\n    if removed_neighbors:\n        rn_list = list(removed_neighbors)\n        removed_neighbors_features = np.array([[graph.nodes[n][att] for att in attrs] for n in rn_list], dtype=float)\n        norm_removed_neighbors = np.zeros_like(removed_neighbors_features)\n        for i in range(len(attrs)):\n            norm_removed_neighbors[:, i] = normalize(removed_neighbors_features[:, i])\n    else:\n        norm_removed_neighbors = np.empty((0, len(attrs)))\n\n    penalties = []\n    for i in range(norm_features.shape[0]):\n        sims_removed = [cosine_sim(norm_features[i], r) for r in removed_matrix] if len(removed_matrix) > 0 else [0.0]\n        sims_neighbors = [cosine_sim(norm_features[i], r) for r in norm_removed_neighbors] if norm_removed_neighbors.shape[0] > 0 else [0.0]\n        max_sim = max(max(sims_removed), max(sims_neighbors))\n        penalties.append(max_sim)\n    penalties = np.array(penalties)\n\n    adjusted_scores = synergy * (1 - penalty_factor * penalties)\n    \n    max_score = adjusted_scores.max()\n    candidates = np.where(adjusted_scores == max_score)[0]\n\n    if len(candidates) == 1:\n        next_node = unvisited_nodes[candidates[0]]\n    else:\n        # Tie-break by smallest clustering coefficient to prefer bridges\n        clust_candidates = norm_features[candidates, attrs.index('clustering')]\n        best_idx = candidates[np.argmin(clust_candidates)]\n        next_node = unvisited_nodes[best_idx]\n\n    return next_node",
+          "objective": 0.0916,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "b2df1c914fb0c43bf6fb7f8126560d73"
+               ],
+               "anc_prefix_k": 0.5909559301636391,
+               "fht_50": 74.0,
+               "fht_10": 131.0,
+               "lcc_at_k_frac": 0.3968636911942099,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.2665386199951172,
+          "time_select": 0.6770951747894287,
+          "time_anc": 0.358900785446167,
+          "unique_id": "4bd0e8a602a3d821c4e6700cd818aafb"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    \n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    \n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n    \n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    cluster_n = norm(cluster)\n    inv_clust_n = 1 - cluster_n\n    \n    # Harmonic mean helper (avoid div by zero)\n    def harmonic_mean(a, b):\n        denom = a + b\n        return 2 * a * b / denom if denom > 1e-12 else 0\n    \n    # Harmonic mean of degree and betweenness to highlight nodes both locally and globally important\n    hb_scores = np.array([harmonic_mean(d, b) for d, b in zip(deg_n, betw_n)])\n    \n    # Dynamic weights adjusted by precomputed graph features for adaptive focus\n    w_core = 0.4 * (1 + max_core / 10)\n    w_deg = 0.25 * (1 + degree_variance)\n    w_betw = 0.15 * (1 + bridge_ratio)\n    w_hb = 0.15\n    w_cluster = 0.05 * (1 + np.log1p(apl_lcc))\n    \n    weights_sum = w_core + w_deg + w_betw + w_hb + w_cluster\n    w_core /= weights_sum\n    w_deg /= weights_sum\n    w_betw /= weights_sum\n    w_hb /= weights_sum\n    w_cluster /= weights_sum\n    \n    scores = (w_core * core_n +\n              w_deg * deg_n +\n              w_betw * betw_n +\n              w_hb * hb_scores +\n              w_cluster * inv_clust_n)\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    \n    return next_node",
+          "objective": 0.09214,
+          "other_inf": {
+               "operator": "t2",
+               "parent": [
+                    "d9565dc84f64b7456cfa51d2f41e4a47",
+                    "5c848ccc94247a78745373ef41460802",
+                    "1971b649c75d17273a066a633f80c87f"
+               ],
+               "anc_prefix_k": 0.5975292183214332,
+               "fht_50": 73.0,
+               "fht_10": 129.0,
+               "lcc_at_k_frac": 0.39203860072376356,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.3058128356933594,
+          "time_select": 0.5733253955841064,
+          "time_anc": 0.32903385162353516,
+          "unique_id": "0f9d273b945304db7b6d863e3890201f"
+     },
+     {
+          "algorithm": "'low': max_low, 'mid': max_mid, 'high': max_high",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    # Extract features\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        min_v, max_v = arr.min(), arr.max()\n        if max_v - min_v < 1e-12:\n            return np.zeros_like(arr)\n        return (arr - min_v) / (max_v - min_v)\n\n    # Normalize features\n    betw_n = normalize(betweenness)\n    clust_n = normalize(clustering)\n    inv_clust_n = 1 - clust_n\n    eig_n = normalize(eigenvector)\n    deg_n = normalize(degree)\n    core_n = normalize(core)\n\n    # Compute tertiles of eigenvector centrality to create three groups\n    tertiles = np.percentile(eig_n, [33.33, 66.66])\n    low_mask = eig_n <= tertiles[0]\n    mid_mask = (eig_n > tertiles[0]) & (eig_n <= tertiles[1])\n    high_mask = eig_n > tertiles[1]\n\n    candidates_low = np.array(unvisited_nodes)[low_mask]\n    candidates_mid = np.array(unvisited_nodes)[mid_mask]\n    candidates_high = np.array(unvisited_nodes)[high_mask]\n\n    # Harmonic mean helper to avoid div by zero\n    def harmonic_mean(a, b):\n        denom = a + b\n        return np.where(denom > 1e-12, 2 * a * b / denom, 0)\n\n    # Group 1: Low eigenvector - prioritize hidden bridges (betweenness & inverse clustering)\n    hm_scores_low = harmonic_mean(betw_n[low_mask], inv_clust_n[low_mask]) if len(candidates_low) > 0 else np.array([])\n    \n    # Group 2: Mid eigenvector - prioritize combined structural importance (degree + core + eigenvector)\n    # Weighted sum: degree(0.4), core(0.4), eigenvector(0.2)\n    combined_mid = np.zeros(len(candidates_mid))\n    if len(candidates_mid) > 0:\n        combined_mid = 0.4 * deg_n[mid_mask] + 0.4 * core_n[mid_mask] + 0.2 * eig_n[mid_mask]\n\n    # Group 3: High eigenvector - prioritize degree * core product (long-term fragmentation)\n    deg_core_high = deg_n[high_mask] * core_n[high_mask] if len(candidates_high) > 0 else np.array([])\n\n    # Find max scores in each group or -inf if empty\n    max_low = hm_scores_low.max() if len(hm_scores_low) > 0 else -np.inf\n    max_mid = combined_mid.max() if len(combined_mid) > 0 else -np.inf\n    max_high = deg_core_high.max() if len(deg_core_high) > 0 else -np.inf\n\n    # Select group to pick from based on max score, prioritize low > mid > high in case of ties\n    max_scores = {'low': max_low, 'mid': max_mid, 'high': max_high}\n    priority_order = ['low', 'mid', 'high']\n    max_group = None\n    max_value = -np.inf\n    for group in priority_order:\n        if max_scores[group] > max_value:\n            max_value = max_scores[group]\n            max_group = group\n\n    if max_group == 'low':\n        idx = np.argmax(hm_scores_low)\n        next_node = candidates_low[idx]\n    elif max_group == 'mid':\n        idx = np.argmax(combined_mid)\n        next_node = candidates_mid[idx]\n    elif max_group == 'high':\n        idx = np.argmax(deg_core_high)\n        next_node = candidates_high[idx]\n    else:\n        # Fallback: pick node with max betweenness if all else fails\n        max_betw_idx = np.argmax(betw_n)\n        next_node = unvisited_nodes[max_betw_idx]\n\n    return next_node",
+          "objective": 0.09223,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "5c848ccc94247a78745373ef41460802"
+               ],
+               "anc_prefix_k": 0.5970625560535167,
+               "fht_50": 77.0,
+               "fht_10": 127.0,
+               "lcc_at_k_frac": 0.31845597104945716,
+               "k": 124
+          },
+          "problem": null,
+          "time": 1.3622734546661377,
+          "time_select": 0.7196037769317627,
+          "time_anc": 0.37569499015808105,
+          "unique_id": "e1d91346cefc3d45f6a5b8291e60b4f6"
+     }
+]

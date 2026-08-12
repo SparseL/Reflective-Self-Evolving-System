@@ -1,0 +1,25 @@
+{
+     "algorithm": "n: max_depth+1 for n in unvisited_nodes",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    from collections import deque\n\n    removed_nodes = set(graph.graph.get('removed_nodes', []))  # nodes already removed\n\n    # Precompute inverse clustering and degree for unvisited nodes\n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    inv_clustering = 1 - clustering\n\n    # Normalize degrees and inverse clustering\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    deg_n = norm(degrees)\n    inv_clus_n = norm(inv_clustering)\n\n    # Combine degree and inverse clustering as base disruption potential\n    base_potential = deg_n * inv_clus_n\n\n    # Influence decay factor: compute shortest path distances to removed nodes for each unvisited node\n    # If no nodes removed yet, set influence decay all to 1 (max)\n    if not removed_nodes:\n        influence_decay = np.ones(len(unvisited_nodes))\n    else:\n        # For efficiency, do BFS from removed nodes up to a max depth (e.g., 3)\n        max_depth = 3\n        dist_map = {n: max_depth+1 for n in unvisited_nodes}  # initialize distances large\n        queue = deque()\n        for rnode in removed_nodes:\n            queue.append((rnode, 0))\n        \n        visited = set(removed_nodes)\n        while queue:\n            current, dist = queue.popleft()\n            if dist > max_depth:\n                continue\n            for nbr in graph.neighbors(current):\n                if nbr in unvisited_nodes and dist < dist_map[nbr]:\n                    dist_map[nbr] = dist\n                if nbr not in visited and dist < max_depth:\n                    visited.add(nbr)\n                    queue.append((nbr, dist+1))\n        \n        # Convert distances to decay factors: closer to removed nodes means lower score to avoid redundancy\n        dist_array = np.array([dist_map[n] for n in unvisited_nodes], dtype=float)\n        decay = np.clip(dist_array, 1, max_depth+1)  # avoid zero division\n        influence_decay = 1 / decay  # inverse distance weighting\n\n        # Normalize influence_decay to [0,1]\n        influence_decay = (influence_decay - influence_decay.min()) / (influence_decay.max() - influence_decay.min() + 1e-9)\n\n    # Final score combines base disruption potential and influence decay (weighting to favor nodes less influenced by removed)\n    w_base = 0.7\n    w_decay = 0.3\n    scores = w_base * base_potential + w_decay * influence_decay\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+     "objective": 0.09082,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "9e099042a5080e733319a770ec27fac1",
+               "b0097c6b8751fb2255f5919ef177dcda",
+               "9e099042a5080e733319a770ec27fac1",
+               "4b449e643c827a01f53e6096701b21e1",
+               "9e099042a5080e733319a770ec27fac1"
+          ],
+          "anc_prefix_k": 0.589651014635619,
+          "fht_50": 74.0,
+          "fht_10": 132.0,
+          "lcc_at_k_frac": 0.3823884197828709,
+          "k": 124
+     },
+     "problem": null,
+     "time": 1.0170137882232666,
+     "time_select": 0.2846834659576416,
+     "time_anc": 0.43813610076904297,
+     "unique_id": "bdde7ea8910fc72aee9dd0c5a308e227"
+}

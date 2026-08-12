@@ -1,0 +1,21 @@
+{
+     "algorithm": "n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    degree_variance = pre.get('degree_variance', 0)\n    apl_lcc = pre.get('apl_lcc', 1)\n    diameter_lcc = pre.get('diameter_lcc', 1)\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n\n    degs = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    cluster = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def norm(x):\n        rng = x.max() - x.min()\n        return (x - x.min()) / rng if rng > 1e-12 else np.zeros_like(x)\n\n    deg_n = norm(degs)\n    betw_n = norm(betw)\n    core_n = norm(core)\n    eig_n = norm(eig)\n    cluster_n = norm(cluster)\n\n    # Harmonic mean of normalized degree and betweenness to emphasize nodes high in both\n    with np.errstate(divide='ignore', invalid='ignore'):\n        harm_deg_betw = 2 * deg_n * betw_n / (deg_n + betw_n)\n        harm_deg_betw = np.nan_to_num(harm_deg_betw)\n\n    # Inverse clustering to highlight nodes bridging less clustered neighborhoods\n    inv_cluster = 1 - cluster_n\n\n    # Local neighborhood inverse clustering sum for unvisited neighbors\n    neighbors_dict = {n: set(graph.neighbors(n)) & set(unvisited_nodes) for n in unvisited_nodes}\n    local_inv_cluster_sum = np.array([sum(1 - graph.nodes[nei]['clustering'] for nei in neighbors_dict[n]) for n in unvisited_nodes], dtype=float)\n    local_inv_cluster_norm = norm(local_inv_cluster_sum)\n\n    # Adaptive weight based on graph heterogeneity to balance global vs local impact\n    heterogeneity = (degree_variance / (avg_degree + 1e-9)) * (max_core / (max_core + 1)) * (diameter_lcc / (apl_lcc + 1e-9))\n    heterogeneity = np.clip(heterogeneity, 0, 1)\n\n    alpha = 0.3 + 0.5 * heterogeneity  # from 0.3 to 0.8\n\n    # Final score combines harmonic degree-betweenness, inverse clustering, and local fragmentation\n    final_scores = (1 - alpha) * harm_deg_betw + 0.4 * inv_cluster + alpha * local_inv_cluster_norm\n\n    max_idx = np.argmax(final_scores)\n    next_node = unvisited_nodes[max_idx]\n\n    return next_node",
+     "objective": 0.08527,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "c407c6e42093c0553de1adba43e2ef29"
+          ],
+          "anc_prefix_k": 0.5645701500067767,
+          "fht_50": 76.0,
+          "fht_10": 115.0,
+          "lcc_at_k_frac": 0.1640530759951749,
+          "k": 124
+     },
+     "problem": null,
+     "time": 12.167071342468262,
+     "time_select": 11.36111330986023,
+     "time_anc": 0.5450198650360107,
+     "unique_id": "4e9417b1d5dc12c523f9b821f1971546"
+}
