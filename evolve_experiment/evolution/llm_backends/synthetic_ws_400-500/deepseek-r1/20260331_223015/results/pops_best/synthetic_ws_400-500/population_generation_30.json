@@ -1,0 +1,92 @@
+{
+     "algorithm": "Compute node score as the product of an exponentially weighted geometric mean of normalized centrality measures (betweenness, core number, eigenvector) with exponents determined by the graph's bridge ratio and normalized path length, multiplied by a dynamic penalty term that considers degree variance-adjusted clustering and reciprocal degree power.",
+     "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomputed = graph.graph['precomputed']\n    \n    if 'global_max_betweenness' not in precomputed:\n        precomputed['global_max_betweenness'] = max(graph.nodes[n]['betweenness'] for n in graph.nodes) or 1\n    if 'global_max_core' not in precomputed:\n        precomputed['global_max_core'] = max(graph.nodes[n]['core_number'] for n in graph.nodes) or 1\n    if 'global_max_eigenvector' not in precomputed:\n        precomputed['global_max_eigenvector'] = max(graph.nodes[n]['eigenvector'] for n in graph.nodes) or 1\n    if 'global_max_degree' not in precomputed:\n        precomputed['global_max_degree'] = max(graph.nodes[n]['degree'] for n in graph.nodes) or 1\n        \n    max_bet = precomputed['global_max_betweenness']\n    max_core = precomputed['global_max_core']\n    max_eigen = precomputed['global_max_eigenvector']\n    max_deg = precomputed['global_max_degree']\n    br = precomputed['bridge_ratio_high_bc']\n    apl = precomputed['apl_lcc']\n    diam = precomputed['diameter_lcc']\n    deg_var = precomputed['degree_variance']\n    avg_deg = precomputed['avg_degree']\n    \n    norm_apl = apl / diam if diam > 0 else 0.5\n    cv_sq = deg_var / (avg_deg ** 2) if avg_deg > 0 else 1.0\n    clust_exp = min(1.0, 0.3 + 0.7 * cv_sq)\n    deg_power = 0.4 + 0.6 * br\n\n    best_node = None\n    best_score = -1\n    for node in unvisited_nodes:\n        norm_bet = max(graph.nodes[node]['betweenness'] / max_bet, 1e-9)\n        norm_core = max(graph.nodes[node]['core_number'] / max_core, 1e-9)\n        norm_eigen = max(graph.nodes[node]['eigenvector'] / max_eigen, 1e-9)\n        norm_deg = graph.nodes[node]['degree'] / max_deg\n        clust = graph.nodes[node]['clustering']\n        \n        exp_geom = 0.5 * (1 - norm_apl) * br\n        geom_term = (\n            (norm_bet ** exp_geom) *\n            (norm_core ** (0.3 + 0.2 * norm_apl)) *\n            (norm_eigen ** (0.5 * br * norm_apl))\n        )\n        penalty = ((1 - clust) ** clust_exp) / (norm_deg ** deg_power)\n        score = geom_term * penalty\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+     "objective": 0.2549,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "7a4a26690c9a3ab360599a4e2c46c885",
+               "6b65c08e96009b79426d32e90af0eec6",
+               "6b65c08e96009b79426d32e90af0eec6",
+               "2bfce8ced706ccc76ad268c3921c7e69",
+               "8365ebcf2964fec160582a198d7be97f"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 126.8,
+          "fht_10": 180.6,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2565931134122782,
+                    "metrics": {
+                         "time_select": 0.21279120445251465,
+                         "time_anc": 0.047107696533203125,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 125.0,
+                         "fht_10": 170.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2662947930339354,
+                    "metrics": {
+                         "time_select": 0.24522042274475098,
+                         "time_anc": 0.057161808013916016,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 132.0,
+                         "fht_10": 201.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.25227388247921617,
+                    "metrics": {
+                         "time_select": 0.2513723373413086,
+                         "time_anc": 0.054910898208618164,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 130.0,
+                         "fht_10": 195.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2407422232371289,
+                    "metrics": {
+                         "time_select": 0.18940424919128418,
+                         "time_anc": 0.04438018798828125,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 109.0,
+                         "fht_10": 151.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.25858850219253254,
+                    "metrics": {
+                         "time_select": 0.25699710845947266,
+                         "time_anc": 0.05523061752319336,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 138.0,
+                         "fht_10": 186.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 2.087406635284424,
+     "time_select": 1.155785322189331,
+     "time_anc": 0.2587912082672119,
+     "unique_id": "536b597d1a1e353abc27bcdc0d4b2d28"
+}
