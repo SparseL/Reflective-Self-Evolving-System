@@ -1,0 +1,394 @@
+[
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    unvisited_set = set(unvisited_nodes)\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    deg_n = normalize(degree) + 1e-9\n    betw_n = normalize(betweenness) + 1e-9\n    inv_clust_n = normalize(1 - clustering) + 1e-9\n    core_n = normalize(core_number) + 1e-9\n    \n    # Geometric mean of degree and betweenness to emphasize global influence\n    geo_mean = np.sqrt(deg_n * betw_n)\n    \n    # Neighborhood core variance normalized by max_core_k\n    nbr_core_var = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if neighbors:\n            cores = [graph.nodes[nbr]['core_number'] for nbr in neighbors]\n            nbr_core_var.append(np.var(cores) / (max_core_k if max_core_k > 0 else 1))\n        else:\n            nbr_core_var.append(0.0)\n    nbr_core_var = np.array(nbr_core_var) + 1e-9  # avoid zero\n    \n    # Diversity factor combining inverse clustering and neighborhood core variance\n    diversity = inv_clust_n * nbr_core_var\n    \n    scores = geo_mean * diversity\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.22934,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "884cae278785b95256ca82e7ef68bd27"
+               ],
+               "anc_prefix_k": 0.740896716222164,
+               "fht_50": 588.0,
+               "fht_10": 1492.0,
+               "lcc_at_k_frac": 0.768048128342246,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.2293374356503648,
+                         "metrics": {
+                              "time_select": 93.68128085136414,
+                              "time_anc": 5.512641668319702,
+                              "anc_prefix_k": 0.740896716222164,
+                              "fht_50": 588.0,
+                              "fht_10": 1492.0,
+                              "lcc_at_k_frac": 0.768048128342246,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 99.70805954933167,
+          "time_select": 93.68128085136414,
+          "time_anc": 5.512641668319702,
+          "unique_id": "54745d6400a01c246314e18fab57d427"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    # Common backbone idea in provided algorithms:\n    # Combining node centralities and local structural metrics with weighted formulas or local simulations \n    # to rank nodes by their potential to disrupt connectivity, balancing global importance and local impact.\n\n    # New algorithm description:\n    # {Select the next node by scoring nodes based on a synergy measure computed as the product of \n    # the node's eigenvector centrality and the inverse harmonic mean of its neighbors' betweenness centralities, \n    # thus emphasizing nodes that connect globally influential nodes to locally critical bottlenecks.}\n\n    unvisited_set = set(unvisited_nodes)\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n\n    epsilon = 1e-9\n\n    # Pre-fetch max eigenvector for normalization\n    max_eig = max((graph.nodes[n]['eigenvector'] for n in unvisited_nodes), default=1)\n    # Pre-fetch max betweenness for normalization\n    max_betw = max((graph.nodes[n]['betweenness'] for n in unvisited_nodes), default=1)\n\n    scores = []\n    for node in unvisited_nodes:\n        node_data = graph.nodes[node]\n        eig_norm = node_data['eigenvector'] / max_eig if max_eig > 0 else 0\n\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set and nbr != node]\n        if not neighbors:\n            # If isolated, rely on eigenvector centrality alone\n            scores.append(eig_norm)\n            continue\n\n        nbr_betw = []\n        for nbr in neighbors:\n            b = graph.nodes[nbr]['betweenness'] / max_betw if max_betw > 0 else 0\n            # to avoid zero, add epsilon\n            nbr_betw.append(max(b, epsilon))\n\n        # Harmonic mean of neighbors' betweenness\n        nbr_betw_harmonic = len(nbr_betw) / sum(1.0 / b for b in nbr_betw)\n\n        # Inverse harmonic mean to emphasize neighbors with low betweenness (local bottlenecks)\n        inv_nbr_betw_harmonic = 1.0 / (nbr_betw_harmonic + epsilon)\n\n        # Synergy score: product of node's eigenvector centrality and inverse harmonic mean of neighbors' betweenness\n        score = eig_norm * inv_nbr_betw_harmonic\n\n        # Incorporate bridge ratio as a mild boost\n        score *= (1 + bridge_ratio)\n\n        scores.append(score)\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23196,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "73e937563390d893c4bf03abf15fcb0d",
+                    "6053da9562439ededef630328e14009e",
+                    "54745d6400a01c246314e18fab57d427",
+                    "73e937563390d893c4bf03abf15fcb0d",
+                    "73e937563390d893c4bf03abf15fcb0d"
+               ],
+               "anc_prefix_k": 0.7240772762328238,
+               "fht_50": 561.0,
+               "fht_10": 1592.0,
+               "lcc_at_k_frac": 0.7479946524064172,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23195581509534752,
+                         "metrics": {
+                              "time_select": 64.37125897407532,
+                              "time_anc": 6.244081020355225,
+                              "anc_prefix_k": 0.7240772762328238,
+                              "fht_50": 561.0,
+                              "fht_10": 1592.0,
+                              "lcc_at_k_frac": 0.7479946524064172,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 71.13664841651917,
+          "time_select": 64.37125897407532,
+          "time_anc": 6.244081020355225,
+          "unique_id": "3e7dfe3300d5c15748a6458a37f76d7f"
+     },
+     {
+          "algorithm": "",
+          "code": "# Backbone idea: \n# All provided algorithms combine various normalized centrality and local structural metrics \n# with weighted formulas to rank nodes, balancing global importance and local topology \n# to iteratively fragment the network.\n\n# New algorithm description:\n# {Select the next node by evaluating the harmonic mean of normalized betweenness and inverse clustering coefficient,\n# multiplied by an adaptive penalty factor derived from the node's closeness proxy (eigenvector) and \n# neighborhood core diversity, prioritizing nodes that globally bridge communities yet locally diversify core connectivity.}\n\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    unvisited_set = set(unvisited_nodes)\n    \n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if abs(mx - mn) < 1e-9:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    betw_n = normalize(betweenness) + 1e-9\n    inv_clust_n = normalize(1 - clustering) + 1e-9\n    eig_n = normalize(eigenvector) + 1e-9\n    core_n = normalize(core_number) + 1e-9\n    \n    # Harmonic mean of betweenness and inverse clustering to prioritize nodes bridging and locally sparse\n    harm_mean = 2 * (betw_n * inv_clust_n) / (betw_n + inv_clust_n)\n    \n    # Compute neighborhood core diversity (std dev of core numbers of unvisited neighbors)\n    nbr_core_diversity = []\n    for node in unvisited_nodes:\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if neighbors:\n            cores = [graph.nodes[nbr]['core_number'] for nbr in neighbors]\n            nbr_core_diversity.append(np.std(cores) / (max_core_k if max_core_k > 0 else 1))\n        else:\n            nbr_core_diversity.append(0.0)\n    nbr_core_diversity = np.array(nbr_core_diversity) + 1e-9  # avoid zero\n    \n    # Adaptive penalty: nodes with high eigenvector but low neighborhood core diversity get penalized \n    penalty = np.exp(-eig_n / nbr_core_diversity)\n    \n    scores = harm_mean * penalty\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23251,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "9c1a6956365d0528f2f9003e4327574d",
+                    "9399f5bfe21ff32ce9771ad0885bcd8b",
+                    "2767807a8c3606c03a9eba4f56bc6f57",
+                    "6053da9562439ededef630328e14009e",
+                    "2767807a8c3606c03a9eba4f56bc6f57"
+               ],
+               "anc_prefix_k": 0.737612617223647,
+               "fht_50": 606.0,
+               "fht_10": 1572.0,
+               "lcc_at_k_frac": 0.7650401069518716,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23250921367604008,
+                         "metrics": {
+                              "time_select": 112.72969150543213,
+                              "time_anc": 5.6662657260894775,
+                              "anc_prefix_k": 0.737612617223647,
+                              "fht_50": 606.0,
+                              "fht_10": 1572.0,
+                              "lcc_at_k_frac": 0.7650401069518716,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 118.90629744529724,
+          "time_select": 112.72969150543213,
+          "time_anc": 5.6662657260894775,
+          "unique_id": "884cae278785b95256ca82e7ef68bd27"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    avg_degree = pre.get('avg_degree', 1)\n    max_core_k = pre.get('max_core_k', 1)\n    \n    unvisited_set = set(unvisited_nodes)\n    \n    max_clustering = max((graph.nodes[n]['clustering'] for n in unvisited_nodes), default=1e-9)\n    max_betweenness = max((graph.nodes[n]['betweenness'] for n in unvisited_nodes), default=1e-9)\n    max_core = max((graph.nodes[n]['core_number'] for n in unvisited_nodes), default=1)\n    \n    scores = []\n    \n    for node in unvisited_nodes:\n        node_data = graph.nodes[node]\n        \n        clust_n = node_data['clustering'] / max_clustering\n        core_n = node_data['core_number'] / max_core\n        betw_n = node_data['betweenness'] / max_betweenness\n        \n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if len(neighbors) < 2:\n            scores.append(-float('inf'))\n            continue\n        \n        nbr_clust_norm = np.array([graph.nodes[nbr]['clustering'] / max_clustering for nbr in neighbors])\n        clust_var = np.var(nbr_clust_norm)\n        \n        # Score favors nodes bridging diverse clustered neighborhoods with high betweenness\n        score_local = clust_var * (0.6 * betw_n + 0.4 * clust_n)\n        \n        # Penalize nodes deeply embedded in the core to avoid over-central removals\n        core_penalty = np.tanh(core_n / (max_core_k + 1e-9))\n        \n        final_score = score_local * (1 - 0.5 * core_penalty) + bridge_ratio * betw_n\n        \n        scores.append(final_score)\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23514,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "6053da9562439ededef630328e14009e"
+               ],
+               "anc_prefix_k": 0.7455952924903434,
+               "fht_50": 624.0,
+               "fht_10": 1569.0,
+               "lcc_at_k_frac": 0.7710561497326203,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.2351369366196237,
+                         "metrics": {
+                              "time_select": 86.00406670570374,
+                              "time_anc": 5.204977035522461,
+                              "anc_prefix_k": 0.7455952924903434,
+                              "fht_50": 624.0,
+                              "fht_10": 1569.0,
+                              "lcc_at_k_frac": 0.7710561497326203,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 91.73692870140076,
+          "time_select": 86.00406670570374,
+          "time_anc": 5.204977035522461,
+          "unique_id": "fef53dceaaffe53407c92fa0a64551ee"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\nfrom math import log2\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    unvisited_set = set(unvisited_nodes)\n    \n    # Pre-fetch arrays\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    \n    max_betw = betweenness.max() if betweenness.size > 0 else 1.0\n    max_core = core_number.max() if core_number.size > 0 else 1.0\n    \n    # Normalize betweenness and inverse clustering\n    betw_n = betweenness / max_betw if max_betw > 0 else betweenness\n    inv_clust_n = 1 - clustering\n    \n    def neighborhood_entropy(node):\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if not neighbors:\n            return 0.0\n        # Count frequency of core numbers in neighborhood\n        core_vals = [graph.nodes[nbr]['core_number'] for nbr in neighbors]\n        total = len(core_vals)\n        freq = {}\n        for c in core_vals:\n            freq[c] = freq.get(c, 0) + 1\n        entropy = 0.0\n        for count in freq.values():\n            p = count / total\n            entropy -= p * log2(p)\n        # Normalize entropy by max possible entropy = log2(number of unique cores)\n        max_ent = log2(len(freq)) if len(freq) > 1 else 1.0\n        return entropy / max_ent if max_ent > 0 else 0.0\n\n    # Compute neighborhood entropies vectorized by loop\n    nbr_entropy = np.array([neighborhood_entropy(n) for n in unvisited_nodes]) + 1e-9  # avoid zero\n    \n    # Weighted synergy score\n    # Weighting betweenness stronger than inverse clustering to emphasize bridging with local diversity\n    synergy_scores = nbr_entropy * (0.7 * betw_n + 0.3 * inv_clust_n)\n    \n    max_idx = np.argmax(synergy_scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23654,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "884cae278785b95256ca82e7ef68bd27",
+                    "54745d6400a01c246314e18fab57d427",
+                    "54745d6400a01c246314e18fab57d427",
+                    "fef53dceaaffe53407c92fa0a64551ee",
+                    "3094405e17dfebc59a16a7b2574c3da6"
+               ],
+               "anc_prefix_k": 0.7477565371343212,
+               "fht_50": 617.0,
+               "fht_10": 1567.0,
+               "lcc_at_k_frac": 0.7747326203208557,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.2365423501707521,
+                         "metrics": {
+                              "time_select": 41.96324944496155,
+                              "time_anc": 5.681175947189331,
+                              "anc_prefix_k": 0.7477565371343212,
+                              "fht_50": 617.0,
+                              "fht_10": 1567.0,
+                              "lcc_at_k_frac": 0.7747326203208557,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 48.18255305290222,
+          "time_select": 41.96324944496155,
+          "time_anc": 5.681175947189331,
+          "unique_id": "265bb2d5a653322d8078621dff93291c"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_clust_global = pre.get('avg_clustering', 0.5)  # fallback if not available\n    \n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clust = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    # Avoid division by zero by adding a small epsilon\n    eps = 1e-9\n    ratio = betw / (degrees + eps)\n    \n    # Normalize ratio to [0,1]\n    mn, mx = ratio.min(), ratio.max()\n    if abs(mx - mn) < 1e-9:\n        ratio_n = np.full_like(ratio, 0.5)\n    else:\n        ratio_n = (ratio - mn) / (mx - mn)\n    \n    # Compute absolute deviation of clustering coefficient from global average\n    clust_dev = np.abs(clust - avg_clust_global)\n    # Normalize deviation to [0,1]\n    mn_d, mx_d = clust_dev.min(), clust_dev.max()\n    if abs(mx_d - mn_d) < 1e-9:\n        clust_dev_n = np.full_like(clust_dev, 0.5)\n    else:\n        clust_dev_n = (clust_dev - mn_d) / (mx_d - mn_d)\n    \n    # Score combines high betw/deg ratio and moderate clustering deviation penalty\n    # Weight parameters\n    w_ratio = 0.7\n    w_clust_dev = 0.3\n    \n    scores = w_ratio * ratio_n - w_clust_dev * clust_dev_n\n    \n    idx = np.argmax(scores)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+          "objective": 0.23662,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "7cd16ea05d7e0ee7e32074578452ce9b",
+                    "1b40ff5304cc66a5851f5756ed30e57b",
+                    "9399f5bfe21ff32ce9771ad0885bcd8b",
+                    "7cd16ea05d7e0ee7e32074578452ce9b",
+                    "7cd16ea05d7e0ee7e32074578452ce9b"
+               ],
+               "anc_prefix_k": 0.7374979470137877,
+               "fht_50": 600.0,
+               "fht_10": 1610.0,
+               "lcc_at_k_frac": 0.7650401069518716,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23662372963914,
+                         "metrics": {
+                              "time_select": 4.21969199180603,
+                              "time_anc": 5.544416189193726,
+                              "anc_prefix_k": 0.7374979470137877,
+                              "fht_50": 600.0,
+                              "fht_10": 1610.0,
+                              "lcc_at_k_frac": 0.7650401069518716,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 10.289382696151733,
+          "time_select": 4.21969199180603,
+          "time_anc": 5.544416189193726,
+          "unique_id": "01deeed1b239fee869f5e6fd6e1b8335"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    unvisited_set = set(unvisited_nodes)\n\n    max_betw = max((graph.nodes[n]['betweenness'] for n in unvisited_nodes), default=1)\n    max_degree = max((graph.nodes[n]['degree'] for n in unvisited_nodes), default=1)\n\n    scores = []\n\n    for node in unvisited_nodes:\n        node_data = graph.nodes[node]\n\n        # Normalize betweenness and degree\n        betw_norm = node_data['betweenness'] / max_betw if max_betw > 0 else 0\n        deg = node_data['degree'] if node_data['degree'] > 0 else 1\n\n        # Inverse clustering\n        inv_clust = 1 - node_data['clustering']\n\n        # Count unvisited neighbors and total neighbors\n        nbrs = list(graph.neighbors(node))\n        total_nbrs = len(nbrs)\n        if total_nbrs == 0:\n            # Isolated node, rely on betweenness and inverse clustering\n            disruption_index = betw_norm * inv_clust\n            scores.append(disruption_index)\n            continue\n\n        unvisited_nbrs = [nbr for nbr in nbrs if nbr in unvisited_set]\n        unvisited_count = len(unvisited_nbrs)\n\n        # Proportion of unvisited neighbors to total neighbors\n        prop_unvisited = unvisited_count / total_nbrs\n\n        # Diminishing returns factor: favors nodes with many yet unvisited neighbors, but caps impact\n        diminishing_factor = np.tanh(3 * prop_unvisited)\n\n        # Disruption index combining global importance, local sparsity, and neighbor removal potential\n        disruption_index = betw_norm * inv_clust * diminishing_factor\n\n        # Slight boost by bridge_ratio weighted degree to reflect node connectivity importance\n        disruption_index += bridge_ratio * (deg / max_degree)\n\n        scores.append(disruption_index)\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23663,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "fef53dceaaffe53407c92fa0a64551ee",
+                    "73e937563390d893c4bf03abf15fcb0d",
+                    "8f8d92ca3c63aec9fe4c8ed6a45e404d",
+                    "2767807a8c3606c03a9eba4f56bc6f57",
+                    "6053da9562439ededef630328e14009e"
+               ],
+               "anc_prefix_k": 0.7509844840615876,
+               "fht_50": 625.0,
+               "fht_10": 1554.0,
+               "lcc_at_k_frac": 0.7757352941176471,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23663412850065635,
+                         "metrics": {
+                              "time_select": 20.158857107162476,
+                              "time_anc": 5.351968288421631,
+                              "anc_prefix_k": 0.7509844840615876,
+                              "fht_50": 625.0,
+                              "fht_10": 1554.0,
+                              "lcc_at_k_frac": 0.7757352941176471,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 26.028568744659424,
+          "time_select": 20.158857107162476,
+          "time_anc": 5.351968288421631,
+          "unique_id": "3094405e17dfebc59a16a7b2574c3da6"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    # Common backbone idea in provided algorithms:\n    # Combining multiple node centrality and structural features (degree, betweenness, eigenvector, clustering, core number)\n    # using weighted or composite scores emphasizing nodes that disrupt connectivity either globally or locally.\n\n    # New algorithm description:\n    # {Select the next node by maximizing a diversity-driven disruption score computed as the harmonic mean of \n    # normalized betweenness centrality and an entropy measure of the unvisited neighbors' core number distribution, \n    # thus favoring nodes whose removal breaks heterogeneous, structurally diverse neighborhoods.}\n\n    unvisited_set = set(unvisited_nodes)\n    node_attrs = graph.nodes\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    epsilon = 1e-9\n\n    # Precompute max betweenness for normalization\n    max_betw = max((node_attrs[n]['betweenness'] for n in unvisited_nodes), default=1)\n    max_core_k = max_core if max_core > 0 else 1\n\n    scores = []\n    for node in unvisited_nodes:\n        node_data = node_attrs[node]\n        betw_norm = node_data['betweenness'] / max_betw if max_betw > 0 else 0\n\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set and nbr != node]\n        if not neighbors:\n            # isolated or leaf-like nodes rely on betweenness alone\n            scores.append(betw_norm)\n            continue\n\n        # Core number distribution of neighbors\n        core_vals = [node_attrs[nbr]['core_number'] for nbr in neighbors]\n\n        # Compute normalized histogram (discrete bins from 1 to max_core_k)\n        bins = np.arange(1, max_core_k + 2)  # bins edges for histogram\n        hist, _ = np.histogram(core_vals, bins=bins, density=True)\n        # Avoid zero probabilities for entropy calc\n        hist += epsilon\n        hist /= hist.sum()\n\n        # Shannon entropy of neighbors' core distribution\n        entropy = -np.sum(hist * np.log(hist))\n\n        # Normalize entropy by max possible entropy log(max_core_k)\n        max_entropy = np.log(max_core_k) if max_core_k > 1 else 1\n        norm_entropy = entropy / max_entropy\n\n        # Harmonic mean of betweenness and normalized entropy emphasizes balanced importance and diversity\n        harm_mean = 2 * (betw_norm * norm_entropy) / (betw_norm + norm_entropy + epsilon)\n\n        scores.append(harm_mean)\n\n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23679,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "3e7dfe3300d5c15748a6458a37f76d7f",
+                    "9399f5bfe21ff32ce9771ad0885bcd8b",
+                    "6053da9562439ededef630328e14009e",
+                    "2767807a8c3606c03a9eba4f56bc6f57",
+                    "3094405e17dfebc59a16a7b2574c3da6"
+               ],
+               "anc_prefix_k": 0.7511937545631228,
+               "fht_50": 627.0,
+               "fht_10": 1550.0,
+               "lcc_at_k_frac": 0.7777406417112299,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23679402767208563,
+                         "metrics": {
+                              "time_select": 171.01485514640808,
+                              "time_anc": 5.213371753692627,
+                              "anc_prefix_k": 0.7511937545631228,
+                              "fht_50": 627.0,
+                              "fht_10": 1550.0,
+                              "lcc_at_k_frac": 0.7777406417112299,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 176.78579330444336,
+          "time_select": 171.01485514640808,
+          "time_anc": 5.213371753692627,
+          "unique_id": "e1d605fd1d2b62e6d3b2ae917e4c792a"
+     },
+     {
+          "algorithm": "",
+          "code": "# {Select the next node by scoring nodes based on their \"resilience drop potential\": \n# estimate each node's removal effect on reducing the redundancy of paths between its unvisited neighbors by approximating local effective resistance using degree, core number, and eigenvector centrality, thereby targeting nodes that maximally weaken local robustness without explicit graph traversal.}\n\ndef select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    avg_degree = pre.get('avg_degree', 1)\n    degree_variance = pre.get('degree_variance', 1)\n    \n    unvisited_set = set(unvisited_nodes)\n    \n    # Precompute max values for normalization\n    max_degree = max((graph.nodes[n]['degree'] for n in unvisited_nodes), default=1)\n    max_core = max((graph.nodes[n]['core_number'] for n in unvisited_nodes), default=1)\n    max_eigen = max((graph.nodes[n]['eigenvector'] for n in unvisited_nodes), default=1e-9)\n    \n    scores = []\n    \n    for node in unvisited_nodes:\n        node_data = graph.nodes[node]\n        \n        # Normalized features\n        deg_n = node_data['degree'] / max_degree\n        core_n = node_data['core_number'] / max_core\n        eig_n = node_data['eigenvector'] / max_eigen\n        \n        # Collect unvisited neighbors\n        neighbors = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_set]\n        if len(neighbors) < 2:\n            # Few neighbors => low local redundancy impact\n            scores.append(-float('inf'))\n            continue\n        \n        # Approximate local effective resistance drop potential (higher means node connects diverse neighbors strongly)\n        # Use variance of normalized neighbors' degree and eigenvector centrality as proxy of redundancy\n        nbr_deg_norm = np.array([graph.nodes[nbr]['degree'] / max_degree for nbr in neighbors])\n        nbr_eig_norm = np.array([graph.nodes[nbr]['eigenvector'] / max_eigen for nbr in neighbors])\n        \n        deg_var = np.var(nbr_deg_norm)\n        eig_var = np.var(nbr_eig_norm)\n        \n        # Local redundancy proxy: high variance means neighbors are diverse and node bridges them\n        local_redundancy = deg_var + eig_var\n        \n        # Resilience drop potential: combine node's core and eigenvector centrality (importance) with local redundancy\n        resilience_drop = (0.7 * core_n + 0.3 * eig_n) * local_redundancy\n        \n        # Penalize hub-like nodes mildly to avoid trivial star removals (based on degree relative to avg_degree)\n        hub_penalty = np.tanh(deg_n / (avg_degree / max_degree + 1e-9))\n        \n        final_score = resilience_drop * (1 - 0.5 * hub_penalty) + bridge_ratio * node_data['betweenness'] / (max_degree + 1e-9)\n        \n        scores.append(final_score)\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.23702,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "62a8597ac29f71aaa969a120547ac75d",
+                    "9399f5bfe21ff32ce9771ad0885bcd8b",
+                    "9c1a6956365d0528f2f9003e4327574d",
+                    "5b053a0424d02453ff5de8efb2ec6b5f",
+                    "b250d76875971747200f21b7b19769e4"
+               ],
+               "anc_prefix_k": 0.7489432778017973,
+               "fht_50": 626.0,
+               "fht_10": 1558.0,
+               "lcc_at_k_frac": 0.7743983957219251,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23701896256546337,
+                         "metrics": {
+                              "time_select": 151.33965158462524,
+                              "time_anc": 5.385385990142822,
+                              "anc_prefix_k": 0.7489432778017973,
+                              "fht_50": 626.0,
+                              "fht_10": 1558.0,
+                              "lcc_at_k_frac": 0.7743983957219251,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 157.23485922813416,
+          "time_select": 151.33965158462524,
+          "time_anc": 5.385385990142822,
+          "unique_id": "6053da9562439ededef630328e14009e"
+     },
+     {
+          "algorithm": "Select the next node by computing a composite dynamic score that combines normalized betweenness, closeness centrality estimated via eigenvector, a sigmoid-transformed inverse clustering coefficient, and an adaptively weighted core number favoring mid-core nodes, while progressively emphasizing nodes that minimize the largest connected component size.",
+          "code": "import networkx as nx\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    # Precomputed global features\n    max_core_k = graph.graph['precomputed']['max_core_k']\n    # Extract relevant node attributes and create arrays for normalization\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes])\n    # Approximate closeness centrality by eigenvector centrality (normalized)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes])\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes])\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes])\n\n    # Normalize betweenness and eigenvector centrality (min-max)\n    def normalize(arr):\n        minv, maxv = arr.min(), arr.max()\n        return (arr - minv) / (maxv - minv) if maxv > minv else np.zeros_like(arr)\n\n    norm_betweenness = normalize(betweenness)\n    norm_eigenvector = normalize(eigenvector)\n\n    # Inverse clustering coefficient (1 - clustering), then sigmoid transform\n    inv_clustering = 1 - clustering\n    sigmoid_inv_cluster = 1 / (1 + np.exp(-10 * (inv_clustering - 0.5)))  # center at 0.5, sharpness 10\n\n    # Adaptive core weighting: favors mid-core nodes via a bell-shaped curve (Gaussian)\n    mid_core = max_core_k / 2\n    sigma = max_core_k / 4 if max_core_k > 0 else 1  # avoid div zero\n    core_weight = np.exp(-((core_number - mid_core) ** 2) / (2 * sigma * sigma))\n\n    # Dynamic emphasis factor on reducing largest connected component size: \n    # heuristic: nodes with higher betweenness and mid-core are emphasized more\n    emphasis = norm_betweenness * core_weight\n\n    # Composite score\n    score = (\n        0.35 * norm_betweenness +\n        0.25 * norm_eigenvector +\n        0.20 * sigmoid_inv_cluster +\n        0.20 * core_weight\n    ) * (1 + emphasis)  # emphasize nodes reducing largest component\n\n    # Select node with highest score\n    max_idx = np.argmax(score)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+          "objective": 0.2372,
+          "other_inf": {
+               "operator": "cu",
+               "parent": [
+                    "01deeed1b239fee869f5e6fd6e1b8335",
+                    "9399f5bfe21ff32ce9771ad0885bcd8b",
+                    "b250d76875971747200f21b7b19769e4",
+                    "5b053a0424d02453ff5de8efb2ec6b5f",
+                    "5b053a0424d02453ff5de8efb2ec6b5f"
+               ],
+               "anc_prefix_k": 0.7491271206867675,
+               "fht_50": 618.0,
+               "fht_10": 1569.0,
+               "lcc_at_k_frac": 0.7713903743315508,
+               "k": 448,
+               "detailed_results": [
+                    {
+                         "instance": "Enron_sampled",
+                         "objective": 0.23719912882802277,
+                         "metrics": {
+                              "time_select": 5.7382307052612305,
+                              "time_anc": 5.2830727100372314,
+                              "anc_prefix_k": 0.7491271206867675,
+                              "fht_50": 618.0,
+                              "fht_10": 1569.0,
+                              "lcc_at_k_frac": 0.7713903743315508,
+                              "k": 448
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 11.536937475204468,
+          "time_select": 5.7382307052612305,
+          "time_anc": 5.2830727100372314,
+          "unique_id": "2767807a8c3606c03a9eba4f56bc6f57"
+     }
+]
