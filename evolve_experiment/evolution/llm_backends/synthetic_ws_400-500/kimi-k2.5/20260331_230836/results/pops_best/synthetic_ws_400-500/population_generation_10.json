@@ -1,0 +1,92 @@
+{
+     "algorithm": "The algorithm computes a Geometric Alignment Score by projecting each node into a four-dimensional feature space comprising normalized coreness, logarithmically-scaled betweenness, structural hole openness, and relative degree, defines a dynamic unit target vector that rotates from the bridge-destruction quadrant toward the hub-isolation quadrant based on the removal progress fraction, and selects the node with maximum cosine similarity to this moving target to ensure geometrically optimal phase-dependent fragmentation.",
+     "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    avg_degree = precomp['avg_degree']\n    epsilon = 1e-9\n    \n    total_nodes = len(graph.nodes)\n    removed_frac = 1.0 - (len(unvisited_nodes) / total_nodes)\n    \n    # Dynamic target vector: shifts from bridge-focus [0.2, 1.0, 1.0, 0.3] \n    # to hub-focus [1.0, 0.3, 0.2, 1.0]\n    t_core = 0.2 + 0.8 * removed_frac\n    t_btw = 1.0 - 0.7 * removed_frac\n    t_struct = 1.0 - 0.8 * removed_frac\n    t_deg = 0.3 + 0.7 * removed_frac\n    \n    target_norm = math.sqrt(t_core**2 + t_btw**2 + t_struct**2 + t_deg**2) + epsilon\n    \n    # Precompute max betweenness for log-normalization\n    max_btw = max(graph.nodes[n]['betweenness'] for n in unvisited_nodes)\n    log_max_btw = math.log1p(max_btw) if max_btw > epsilon else 1.0\n    \n    best_node = unvisited_nodes[0]\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        core = nd['core_number']\n        btw = nd['betweenness']\n        clust = nd['clustering']\n        deg = nd['degree']\n        \n        # Feature vector components [core, betweenness, structural_hole, degree]\n        v_core = core / max_core if max_core > 0 else 0.0\n        v_btw = math.log1p(btw) / log_max_btw if log_max_btw > epsilon else 0.0\n        v_struct = 1.0 - clust  # High value for structural holes (low clustering)\n        v_deg = deg / (avg_degree + epsilon) if avg_degree > 0 else 0.0\n        \n        # Cosine similarity calculation\n        dot_product = (v_core * t_core + v_btw * t_btw + \n                      v_struct * t_struct + v_deg * t_deg)\n        node_norm = math.sqrt(v_core**2 + v_btw**2 + v_struct**2 + v_deg**2) + epsilon\n        cosine_sim = dot_product / (node_norm * target_norm)\n        \n        if cosine_sim > best_score:\n            best_score = cosine_sim\n            best_node = node\n            \n    return best_node",
+     "objective": 0.25685,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "1426fa1faf9645b783f10bcbef7ab730",
+               "3c2c09fee797bc210fc00fb872f9085e",
+               "f3d03f17a2faca9333b7d9198f8fed89",
+               "f3d03f17a2faca9333b7d9198f8fed89",
+               "d8a7d0f4311396486086409212513581"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 130.4,
+          "fht_10": 184.6,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2570894954323006,
+                    "metrics": {
+                         "time_select": 0.15270400047302246,
+                         "time_anc": 0.05125617980957031,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 126.0,
+                         "fht_10": 176.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2503477369644393,
+                    "metrics": {
+                         "time_select": 0.17000293731689453,
+                         "time_anc": 0.05125904083251953,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 132.0,
+                         "fht_10": 191.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2649926401105769,
+                    "metrics": {
+                         "time_select": 0.16600489616394043,
+                         "time_anc": 0.057518720626831055,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 136.0,
+                         "fht_10": 202.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2574092147385783,
+                    "metrics": {
+                         "time_select": 0.132035493850708,
+                         "time_anc": 0.04304981231689453,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 120.0,
+                         "fht_10": 169.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2544191752440674,
+                    "metrics": {
+                         "time_select": 0.16887688636779785,
+                         "time_anc": 0.05354619026184082,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 138.0,
+                         "fht_10": 185.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.6566154956817627,
+     "time_select": 0.7896242141723633,
+     "time_anc": 0.25662994384765625,
+     "unique_id": "bf184462b930067d99664f3237db99ab"
+}

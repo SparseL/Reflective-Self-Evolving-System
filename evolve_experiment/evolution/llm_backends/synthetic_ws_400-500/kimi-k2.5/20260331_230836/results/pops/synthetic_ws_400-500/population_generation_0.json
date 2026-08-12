@@ -1,0 +1,518 @@
+[
+     {
+          "algorithm": "This algorithm iteratively selects the unvisited node maximizing a structural fragility score defined as the product of normalized k-core number, the local bridging coefficient (degree divided by clustering), eigenvector centrality, and an adaptive term that scales betweenness by the graph's bridge ratio, thereby targeting high-influence articulation points within the core structure to balance rapid initial fragmentation with thorough long-term collapse.",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    # Extract precomputed graph-level features once for efficiency\n    precomputed = graph.graph['precomputed']\n    max_core = precomputed['max_core_k']\n    avg_degree = precomputed['avg_degree']\n    bridge_ratio = precomputed['bridge_ratio_high_bc']\n    epsilon = 1e-9\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        # Access precomputed node features in O(1)\n        core = graph.nodes[node]['core_number']\n        clustering = graph.nodes[node]['clustering']\n        degree = graph.nodes[node]['degree']\n        betweenness = graph.nodes[node]['betweenness']\n        eigenvector = graph.nodes[node]['eigenvector']\n        \n        # Calculate components of the fragility score\n        norm_core = core / (max_core + epsilon)\n        local_bridge = degree / (clustering + epsilon)  # High degree, low clustering = bridge\n        influence = 1.0 + eigenvector\n        \n        # Adaptive weighting: amplify betweenness importance if graph has many bridges\n        adaptive_bridge = 1.0 + bridge_ratio * betweenness\n        \n        # Composite score: prioritizes core nodes that are local bridges with high influence\n        score = norm_core * local_bridge * influence * adaptive_bridge\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.27319,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 127.2,
+               "fht_10": 208.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2729008180923356,
+                         "metrics": {
+                              "time_select": 0.12868261337280273,
+                              "time_anc": 0.04737544059753418,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 113.0,
+                              "fht_10": 206.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2784437847922721,
+                         "metrics": {
+                              "time_select": 0.14803171157836914,
+                              "time_anc": 0.05412101745605469,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 137.0,
+                              "fht_10": 214.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27335268300546034,
+                         "metrics": {
+                              "time_select": 0.14979243278503418,
+                              "time_anc": 0.05272054672241211,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 223.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.262322665662103,
+                         "metrics": {
+                              "time_select": 0.1172490119934082,
+                              "time_anc": 0.03811764717102051,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 170.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.27894630685749916,
+                         "metrics": {
+                              "time_select": 0.15356683731079102,
+                              "time_anc": 0.05449271202087402,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 134.0,
+                              "fht_10": 230.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.5592544078826904,
+          "time_select": 0.6973226070404053,
+          "time_anc": 0.2468273639678955,
+          "unique_id": "d8c11c7544cd8310bc6b5cb08abf6032"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    precomputed = graph.graph.get('precomputed', {})\n    avg_degree = precomputed.get('avg_degree', 1.0)\n    max_core_k = precomputed.get('max_core_k', 1)\n    \n    inv_avg_deg = 1.0 / avg_degree if avg_degree > 0 else 1.0\n    best_score = -1.0\n    next_node = unvisited_nodes[0]\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        betweenness = nd.get('betweenness', 0.0)\n        core_num = nd.get('core_number', 0)\n        degree = nd.get('degree', 0)\n        clustering = nd.get('clustering', 0.0)\n        \n        core_gap = max_core_k - core_num + 1\n        norm_degree = degree * inv_avg_deg\n        clustering_adj = clustering if clustering > 0 else 0.0001\n        \n        score = betweenness * core_gap * norm_degree / clustering_adj\n        \n        if score > best_score:\n            best_score = score\n            next_node = node\n            \n    return next_node",
+          "objective": 0.2736,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 127.4,
+               "fht_10": 209.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2734671475811363,
+                         "metrics": {
+                              "time_select": 0.0553898811340332,
+                              "time_anc": 0.046269893646240234,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 113.0,
+                              "fht_10": 209.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2789329707671002,
+                         "metrics": {
+                              "time_select": 0.06831097602844238,
+                              "time_anc": 0.05132603645324707,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 137.0,
+                              "fht_10": 216.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.273708486604036,
+                         "metrics": {
+                              "time_select": 0.06693816184997559,
+                              "time_anc": 0.05300331115722656,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 222.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.26309712026692694,
+                         "metrics": {
+                              "time_select": 0.05184745788574219,
+                              "time_anc": 0.04049181938171387,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 171.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2787836064683859,
+                         "metrics": {
+                              "time_select": 0.06680727005004883,
+                              "time_anc": 0.05274009704589844,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 135.0,
+                              "fht_10": 230.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.2216103076934814,
+          "time_select": 0.3092937469482422,
+          "time_anc": 0.24383115768432617,
+          "unique_id": "2b77dcd72745bdfbdc7ca1d358275833"
+     },
+     {
+          "algorithm": "The algorithm calculates an Adaptive Structural Fragility Index for each unvisited node by dynamically blending betweenness centrality and core number based on the graph's bridge ratio, then multiplying by eigenvector centrality and dividing by local clustering plus epsilon, selecting the node with the maximum score to prioritize both immediate bridge destruction and long-term core collapse while avoiding locally redundant targets.",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    bridge_ratio = graph.graph['precomputed']['bridge_ratio_high_bc']\n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        w_b = 0.5 + bridge_ratio\n        w_c = 1.5 - bridge_ratio\n        score = ((w_b * n['betweenness'] + w_c * n['core_number']) * \n                 n['eigenvector']) / (n['clustering'] + 1e-9)\n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.27418,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.4,
+               "fht_10": 206.4,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2813052514743615,
+                         "metrics": {
+                              "time_select": 0.048848628997802734,
+                              "time_anc": 0.048621177673339844,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 212.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2745557163623929,
+                         "metrics": {
+                              "time_select": 0.054743051528930664,
+                              "time_anc": 0.05100846290588379,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 207.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27599486882987895,
+                         "metrics": {
+                              "time_select": 0.05602765083312988,
+                              "time_anc": 0.05650162696838379,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 221.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2615756717171203,
+                         "metrics": {
+                              "time_select": 0.03998684883117676,
+                              "time_anc": 0.04127240180969238,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 174.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2774694200667202,
+                         "metrics": {
+                              "time_select": 0.0552525520324707,
+                              "time_anc": 0.056418418884277344,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 131.0,
+                              "fht_10": 218.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.1218993663787842,
+          "time_select": 0.25485873222351074,
+          "time_anc": 0.25382208824157715,
+          "unique_id": "3ce86cb3c33cd39889048b429643d8ce"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    precomputed = graph.graph.get('precomputed', {})\n    bridge_ratio = precomputed.get('bridge_ratio_high_bc', 0.0)\n    max_core = precomputed.get('max_core_k', 1)\n    avg_deg = precomputed.get('avg_degree', 1.0)\n    \n    max_core = max(max_core, 1)\n    avg_deg = max(avg_deg, 0.1)\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    alpha = 0.6 + bridge_ratio\n    beta = 1.0 - bridge_ratio * 0.3\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        degree = nd.get('degree', 0)\n        core = nd.get('core_number', 0)\n        eig = nd.get('eigenvector', 0.0)\n        btw = nd.get('betweenness', 0.0)\n        clust = nd.get('clustering', 0.0)\n        \n        norm_core = core / max_core\n        norm_deg = degree / avg_deg\n        \n        if degree > 0:\n            bridge_efficiency = btw / (degree ** 0.5)\n        else:\n            bridge_efficiency = 0.0\n        \n        influence = norm_core * eig\n        redundancy_penalty = 1.0 / (1.0 + beta * clust)\n        \n        score = influence * (1.0 + alpha * bridge_efficiency) * redundancy_penalty * norm_deg\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.27436,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.2,
+               "fht_10": 209.4,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2861556952828839,
+                         "metrics": {
+                              "time_select": 0.07585835456848145,
+                              "time_anc": 0.046982526779174805,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 217.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2738199429573723,
+                         "metrics": {
+                              "time_select": 0.09681129455566406,
+                              "time_anc": 0.05539560317993164,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 137.0,
+                              "fht_10": 221.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27292744065998664,
+                         "metrics": {
+                              "time_select": 0.09554719924926758,
+                              "time_anc": 0.05200004577636719,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 206.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.26149305702014025,
+                         "metrics": {
+                              "time_select": 0.07306480407714844,
+                              "time_anc": 0.037590742111206055,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 172.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2773927310599205,
+                         "metrics": {
+                              "time_select": 0.09279966354370117,
+                              "time_anc": 0.05113959312438965,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 129.0,
+                              "fht_10": 231.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.2934210300445557,
+          "time_select": 0.4340813159942627,
+          "time_anc": 0.24310851097106934,
+          "unique_id": "894e02f0d6ae55611465b0937753dd8e"
+     },
+     {
+          "algorithm": "The algorithm selects the node maximizing the product of its normalized k-core number, betweenness centrality, and eigenvector centrality, divided by one plus its local clustering coefficient, to prioritize highly influential nodes that are structurally embedded in dense cores but act as sparse bridges between communities.",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    max_core_k = graph.graph['precomputed']['max_core_k']\n    best_node = unvisited_nodes[0]\n    best_score = -1.0\n    \n    for node in unvisited_nodes:\n        core = graph.nodes[node]['core_number']\n        betweenness = graph.nodes[node]['betweenness']\n        eigenvector = graph.nodes[node]['eigenvector']\n        clustering = graph.nodes[node]['clustering']\n        \n        score = (core / max_core_k) * betweenness * eigenvector / (1.0 + clustering)\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.27447,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.4,
+               "fht_10": 207.8,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.28504835383003946,
+                         "metrics": {
+                              "time_select": 0.09849858283996582,
+                              "time_anc": 0.04786038398742676,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 215.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2760868813688228,
+                         "metrics": {
+                              "time_select": 0.1105051040649414,
+                              "time_anc": 0.04975724220275879,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 211.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2734815413973269,
+                         "metrics": {
+                              "time_select": 0.11121225357055664,
+                              "time_anc": 0.05498766899108887,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 208.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.25962864111913825,
+                         "metrics": {
+                              "time_select": 0.08372974395751953,
+                              "time_anc": 0.043380022048950195,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 173.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2781037827840469,
+                         "metrics": {
+                              "time_select": 0.10640692710876465,
+                              "time_anc": 0.04926443099975586,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 131.0,
+                              "fht_10": 232.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.3738460540771484,
+          "time_select": 0.510352611541748,
+          "time_anc": 0.24524974822998047,
+          "unique_id": "76d7a0e2517b915f4352aee5f3cbc129"
+     },
+     {
+          "algorithm": "",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph.get('precomputed', {})\n    max_core = precomp.get('max_core_k', 1)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.5)\n    epsilon = 1e-9\n    \n    best_node = unvisited_nodes[0]\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        betweenness = nd.get('betweenness', 0)\n        core_num = nd.get('core_number', 0)\n        eigen = nd.get('eigenvector', 0)\n        clustering = nd.get('clustering', 0)\n        \n        # Avoid division by zero and handle edge cases\n        norm_core = core_num / max_core if max_core > 0 else 0\n        \n        # Structural Fragility Index: combines global bridge, structural integrity,\n        # and influence, penalized by local density\n        score = ((betweenness ** (1 + bridge_ratio)) * \n                 (1 + norm_core) * \n                 (1 + eigen) / \n                 (clustering + epsilon))\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.27475,
+          "other_inf": {
+               "operator": "i1",
+               "parent": [],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 128.4,
+               "fht_10": 211.0,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2757709222319142,
+                         "metrics": {
+                              "time_select": 0.06640315055847168,
+                              "time_anc": 0.04489016532897949,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 122.0,
+                              "fht_10": 208.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.28052561153917327,
+                         "metrics": {
+                              "time_select": 0.08169317245483398,
+                              "time_anc": 0.05001640319824219,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 137.0,
+                              "fht_10": 220.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27720322271459746,
+                         "metrics": {
+                              "time_select": 0.08491277694702148,
+                              "time_anc": 0.05553293228149414,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 229.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.26355080294794836,
+                         "metrics": {
+                              "time_select": 0.06665372848510742,
+                              "time_anc": 0.04180407524108887,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 170.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2766862829780233,
+                         "metrics": {
+                              "time_select": 0.08680295944213867,
+                              "time_anc": 0.0554966926574707,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 131.0,
+                              "fht_10": 228.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.2383949756622314,
+          "time_select": 0.38646578788757324,
+          "time_anc": 0.2477402687072754,
+          "unique_id": "f2fe032a2869eeeacf5d25ebe405813f"
+     }
+]

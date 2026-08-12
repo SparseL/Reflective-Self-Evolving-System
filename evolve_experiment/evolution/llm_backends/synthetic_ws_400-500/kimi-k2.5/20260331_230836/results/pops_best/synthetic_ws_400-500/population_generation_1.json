@@ -1,0 +1,92 @@
+{
+     "algorithm": "The algorithm selects nodes by maximizing a harmonic mean between normalized core centrality and square-root-dampened betweenness centrality, where the relative weights are adaptively set by the coefficient of variation and bridge ratio to shift priority between local core integrity and global bridge disruption, further modulated by spectral influence and penalized by local clustering to avoid redundant removals.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    avg_degree = precomp['avg_degree']\n    deg_var = precomp['degree_variance']\n    bridge_ratio = precomp['bridge_ratio_high_bc']\n    \n    cv = (deg_var ** 0.5) / avg_degree if avg_degree > 0 else 0.0\n    \n    w_btw = (1.0 + cv) * (1.0 + bridge_ratio)\n    w_core = 1.0 / (1.0 + cv)\n    \n    epsilon = 1e-9\n    best_score = -1.0\n    next_node = unvisited_nodes[0]\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        core = nd['core_number']\n        btw = nd['betweenness']\n        eigen = nd['eigenvector']\n        clust = nd['clustering']\n        \n        norm_core = core / max_core if max_core > 0 else 0.0\n        damp_btw = btw ** 0.5\n        \n        val_core = w_core * norm_core\n        val_btw = w_btw * damp_btw\n        \n        if val_core + val_btw < epsilon:\n            harmonic = 0.0\n        else:\n            harmonic = (2.0 * val_core * val_btw) / (val_core + val_btw)\n        \n        score = harmonic * (1.0 + eigen) / (clust + epsilon)\n        \n        if score > best_score:\n            best_score = score\n            next_node = node\n            \n    return next_node",
+     "objective": 0.25879,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "2b77dcd72745bdfbdc7ca1d358275833",
+               "d8c11c7544cd8310bc6b5cb08abf6032",
+               "a67d678c6b2465fafb49741abff5670e",
+               "3ce86cb3c33cd39889048b429643d8ce",
+               "d8c11c7544cd8310bc6b5cb08abf6032"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 131.6,
+          "fht_10": 190.6,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2577910118559518,
+                    "metrics": {
+                         "time_select": 0.06803584098815918,
+                         "time_anc": 0.04729795455932617,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 128.0,
+                         "fht_10": 186.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2616187437263043,
+                    "metrics": {
+                         "time_select": 0.07746148109436035,
+                         "time_anc": 0.052744388580322266,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 136.0,
+                         "fht_10": 185.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2664390586677297,
+                    "metrics": {
+                         "time_select": 0.07977461814880371,
+                         "time_anc": 0.05357193946838379,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 138.0,
+                         "fht_10": 208.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.24398124297302368,
+                    "metrics": {
+                         "time_select": 0.06103086471557617,
+                         "time_anc": 0.06368422508239746,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 118.0,
+                         "fht_10": 172.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2641356800783233,
+                    "metrics": {
+                         "time_select": 0.10974335670471191,
+                         "time_anc": 0.0552825927734375,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 138.0,
+                         "fht_10": 202.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.340660572052002,
+     "time_select": 0.39604616165161133,
+     "time_anc": 0.2725811004638672,
+     "unique_id": "a4f7395bdc07337aa9b89c0a8938e09f"
+}

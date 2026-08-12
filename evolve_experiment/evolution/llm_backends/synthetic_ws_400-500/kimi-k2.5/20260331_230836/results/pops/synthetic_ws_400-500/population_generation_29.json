@@ -1,0 +1,544 @@
+[
+     {
+          "algorithm": "The algorithm computes a multiplicative spectral fragility score using a tensor decomposition-inspired approach where node features are combined through progressive dimensional reduction: first fusing coreness and betweenness into a structural anchor score via their harmonic mean, then modulating by a phase-dependent eigenvector decay factor that inverts the conventional eigenvector importance (targeting nodes that bridge disconnected spectral communities), and finally applying a dynamic redundancy penalty based on local clustering weighted by the network's current topological stress (measured by the ratio of remaining high-core nodes to total remaining nodes), with selection priority given to nodes that maximize information entropy reduction in the unvisited subgraph.",
+          "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    avg_deg = precomp.get('avg_degree', 1.0)\n    deg_var = precomp.get('degree_variance', 0.0)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    \n    total_nodes = len(graph.nodes)\n    remaining = len(unvisited_nodes)\n    removed = total_nodes - remaining\n    progress = removed / total_nodes\n    \n    epsilon = 1e-9\n    \n    # Topological stress: ratio of high-core nodes remaining to total remaining\n    high_core_threshold = max_core * 0.7 if max_core > 0 else 0\n    high_core_count = sum(1 for n in unvisited_nodes if graph.nodes[n]['core_number'] >= high_core_threshold)\n    topo_stress = high_core_count / (remaining + epsilon)\n    \n    # Phase-dependent eigenvector decay: invert eigenvector importance\n    # Early: suppress high eigenvector (spreaders), Late: moderate suppression\n    eigen_decay_exp = 1.0 + 2.0 * (1.0 - progress)  # sharper decay early\n    eigen_phase_factor = 0.3 + 0.4 * progress  # transition from suppression to neutral\n    \n    # Progressive dimensional reduction fusion weights\n    anchor_weight = 0.6 + 0.2 * bridge_ratio  # core-betweenness fusion\n    spectral_weight = 0.4 - 0.1 * bridge_ratio  # eigenvector modulation\n    \n    # Dynamic clustering penalty: increases with topological stress\n    clust_penalty_base = 1.0 + topo_stress * (1.0 + math.sqrt(deg_var) / (avg_deg + epsilon))\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        deg = n['degree']\n        \n        # Dimension 1: Structural anchor (harmonic mean of normalized core and betweenness)\n        norm_core = core / (max_core + epsilon) if max_core > 0 else 0\n        # Harmonic mean: emphasizes balance, penalizes low values in either\n        structural_anchor = (2.0 * norm_core * btw) / (norm_core + btw + epsilon)\n        anchor_boost = structural_anchor ** anchor_weight\n        \n        # Dimension 2: Spectral inversion (decayed eigenvector suppression)\n        # Target nodes with moderate eigenvector that bridge spectral communities\n        eigen_inverted = (1.0 - eigen + epsilon) ** eigen_decay_exp\n        spectral_modulation = eigen_inverted ** spectral_weight\n        # Phase-adjusted: blend inverted with original based on progress\n        spectral_score = eigen_phase_factor * eigen_inverted + (1.0 - eigen_phase_factor) * (1.0 - eigen_inverted)\n        \n        # Multiplicative fusion: tensor-like combination\n        base_score = anchor_boost * spectral_score\n        \n        # Information entropy reduction bonus: prefer nodes bridging degree classes\n        deg_ratio = deg / (avg_deg + epsilon)\n        entropy_reduction = -deg_ratio * math.log(deg_ratio + epsilon) if deg_ratio > 0 else 0\n        entropy_bonus = 0.15 * entropy_reduction * (1.0 - progress)  # diminishes late\n        \n        # Dynamic redundancy penalty: clustering weighted by topological stress\n        # High stress = network fragile = clustering more penalized (redundant nodes hurt more)\n        clust_penalty = clust_penalty_base ** clust\n        redundancy_factor = math.exp(-0.3 * clust * (1.0 + topo_stress))\n        \n        # Final score assembly\n        score = base_score * redundancy_factor + entropy_bonus\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n    \n    return best_node",
+          "objective": 0.25593,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "065a6fd7003d0150a404eee956e1ef0a",
+                    "bf184462b930067d99664f3237db99ab",
+                    "065a6fd7003d0150a404eee956e1ef0a",
+                    "065a6fd7003d0150a404eee956e1ef0a",
+                    "6a0ec89a7f6b147c6b9da97f17fb9e24"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 125.2,
+               "fht_10": 181.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.25895804405739326,
+                         "metrics": {
+                              "time_select": 0.1738722324371338,
+                              "time_anc": 0.047006845474243164,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 125.0,
+                              "fht_10": 178.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2557230339995398,
+                         "metrics": {
+                              "time_select": 0.20075201988220215,
+                              "time_anc": 0.05066347122192383,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 134.0,
+                              "fht_10": 187.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2647710036765664,
+                         "metrics": {
+                              "time_select": 0.19951701164245605,
+                              "time_anc": 0.053259849548339844,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 197.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.24893859022673953,
+                         "metrics": {
+                              "time_select": 0.1499652862548828,
+                              "time_anc": 0.03951144218444824,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 115.0,
+                              "fht_10": 155.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.251271415688081,
+                         "metrics": {
+                              "time_select": 0.2084958553314209,
+                              "time_anc": 0.053963422775268555,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 120.0,
+                              "fht_10": 191.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.7780334949493408,
+          "time_select": 0.9326024055480957,
+          "time_anc": 0.24440503120422363,
+          "unique_id": "4ca9dcafe898c4ce20433bcf818e81fa"
+     },
+     {
+          "algorithm": "A cascading entropy-wave algorithm that uses sigmoid-gated fusion of reciprocal betweenness-core amplification and exponential eigenvector suppression, with adaptive variance-modulated clustering resistance and progressive entropy decay that accelerates disruption through dynamic phase curvature.",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    degree_var = precomp.get('degree_variance', 0.0)\n    avg_deg = precomp.get('avg_degree', 1.0)\n    \n    total_nodes = len(graph.nodes)\n    removed = total_nodes - len(unvisited_nodes)\n    progress = removed / total_nodes\n    \n    # Sigmoid phase curvature: sharper transition around 0.3-0.5 progress\n    sigmoid_mid = 0.4\n    sigmoid_steep = 8.0\n    late_phase = 1.0 / (1.0 + math.exp(-sigmoid_steep * (progress - sigmoid_mid)))\n    early_phase = 1.0 - late_phase\n    \n    # Entropy decay factor: accelerates as more nodes removed\n    entropy_decay = math.exp(-2.0 * progress)\n    \n    # Variance-based modulation for clustering penalty\n    variance_mod = math.tanh(degree_var / (avg_deg ** 2 + 1e-9))\n    \n    epsilon = 1e-9\n    norm_max_core = max_core + epsilon\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        deg = n['degree']\n        \n        norm_core = core / norm_max_core\n        \n        # Reciprocal amplification: betweenness and core multiply with harmonic dampening\n        # Early: high betweenness bridges with core anchoring\n        core_btw_product = norm_core * btw\n        core_btw_sum = norm_core + btw + epsilon\n        early_raw = (2.0 * core_btw_product) / core_btw_sum\n        \n        # Apply bridge ratio boost with entropy decay (diminishes as we progress)\n        early_boost = 1.0 + bridge_ratio * entropy_decay\n        early_score = early_raw * early_boost\n        \n        # Late: exponential eigenvector suppression (inverts high eigenvector to target spreaders)\n        # Use (1 - eigen) to suppress high eigenvector nodes, but core-weighted\n        eigen_suppressed = (1.0 - eigen) ** (1.0 + progress)  # grows sharper as progress increases\n        late_raw = norm_core * (1.0 + eigen_suppressed)\n        \n        # Core amplification with diminishing returns for very high cores\n        late_score = late_raw * (1.0 + math.log1p(core)) / (1.0 + 0.1 * core)\n        \n        # Sigmoid-gated fusion\n        score = early_phase * early_score + late_phase * late_score\n        \n        # Adaptive clustering resistance: variance-modulated penalty\n        # Higher variance networks get stronger clustering penalty early\n        clust_resistance = 1.0 + clust * (1.0 + variance_mod * early_phase)\n        score = score / clust_resistance\n        \n        # Degree entropy bonus: prefer nodes that bridge degree classes\n        deg_entropy = -deg * math.log((deg + epsilon) / (avg_deg + epsilon) + epsilon)\n        score += 0.05 * deg_entropy * entropy_decay\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node\n\nimport math",
+          "objective": 0.25627,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "b2f4e4de3e2e3e1ee2cbc791a7c759aa"
+               ],
+               "anc_prefix_k": 0.8562343436077366,
+               "fht_50": 127.2,
+               "fht_10": 186.6,
+               "lcc_at_k_frac": 0.8506425127942994,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.26088071069318564,
+                         "metrics": {
+                              "time_select": 0.12197566032409668,
+                              "time_anc": 0.047998905181884766,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 126.0,
+                              "fht_10": 175.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.255569344585432,
+                         "metrics": {
+                              "time_select": 0.14780902862548828,
+                              "time_anc": 0.05291914939880371,
+                              "anc_prefix_k": 0.855658438634884,
+                              "fht_50": 136.0,
+                              "fht_10": 192.0,
+                              "lcc_at_k_frac": 0.8482905982905983,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.26841079476188223,
+                         "metrics": {
+                              "time_select": 0.14599895477294922,
+                              "time_anc": 0.054350852966308594,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 138.0,
+                              "fht_10": 218.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.24480808809519308,
+                         "metrics": {
+                              "time_select": 0.11197614669799805,
+                              "time_anc": 0.04379582405090332,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 117.0,
+                              "fht_10": 159.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.25167429192865465,
+                         "metrics": {
+                              "time_select": 0.15138602256774902,
+                              "time_anc": 0.05368351936340332,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 119.0,
+                              "fht_10": 189.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.5282073020935059,
+          "time_select": 0.6791458129882812,
+          "time_anc": 0.2527482509613037,
+          "unique_id": "065a6fd7003d0150a404eee956e1ef0a"
+     },
+     {
+          "algorithm": "The algorithm computes a Geometric Alignment Score by projecting each node into a four-dimensional feature space comprising normalized coreness, logarithmically-scaled betweenness, structural hole openness, and relative degree, defines a dynamic unit target vector that rotates from the bridge-destruction quadrant toward the hub-isolation quadrant based on the removal progress fraction, and selects the node with maximum cosine similarity to this moving target to ensure geometrically optimal phase-dependent fragmentation.",
+          "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    avg_degree = precomp['avg_degree']\n    epsilon = 1e-9\n    \n    total_nodes = len(graph.nodes)\n    removed_frac = 1.0 - (len(unvisited_nodes) / total_nodes)\n    \n    # Dynamic target vector: shifts from bridge-focus [0.2, 1.0, 1.0, 0.3] \n    # to hub-focus [1.0, 0.3, 0.2, 1.0]\n    t_core = 0.2 + 0.8 * removed_frac\n    t_btw = 1.0 - 0.7 * removed_frac\n    t_struct = 1.0 - 0.8 * removed_frac\n    t_deg = 0.3 + 0.7 * removed_frac\n    \n    target_norm = math.sqrt(t_core**2 + t_btw**2 + t_struct**2 + t_deg**2) + epsilon\n    \n    # Precompute max betweenness for log-normalization\n    max_btw = max(graph.nodes[n]['betweenness'] for n in unvisited_nodes)\n    log_max_btw = math.log1p(max_btw) if max_btw > epsilon else 1.0\n    \n    best_node = unvisited_nodes[0]\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        core = nd['core_number']\n        btw = nd['betweenness']\n        clust = nd['clustering']\n        deg = nd['degree']\n        \n        # Feature vector components [core, betweenness, structural_hole, degree]\n        v_core = core / max_core if max_core > 0 else 0.0\n        v_btw = math.log1p(btw) / log_max_btw if log_max_btw > epsilon else 0.0\n        v_struct = 1.0 - clust  # High value for structural holes (low clustering)\n        v_deg = deg / (avg_degree + epsilon) if avg_degree > 0 else 0.0\n        \n        # Cosine similarity calculation\n        dot_product = (v_core * t_core + v_btw * t_btw + \n                      v_struct * t_struct + v_deg * t_deg)\n        node_norm = math.sqrt(v_core**2 + v_btw**2 + v_struct**2 + v_deg**2) + epsilon\n        cosine_sim = dot_product / (node_norm * target_norm)\n        \n        if cosine_sim > best_score:\n            best_score = cosine_sim\n            best_node = node\n            \n    return best_node",
+          "objective": 0.25685,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "1426fa1faf9645b783f10bcbef7ab730",
+                    "3c2c09fee797bc210fc00fb872f9085e",
+                    "f3d03f17a2faca9333b7d9198f8fed89",
+                    "f3d03f17a2faca9333b7d9198f8fed89",
+                    "d8a7d0f4311396486086409212513581"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 130.4,
+               "fht_10": 184.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2570894954323006,
+                         "metrics": {
+                              "time_select": 0.15270400047302246,
+                              "time_anc": 0.05125617980957031,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 126.0,
+                              "fht_10": 176.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2503477369644393,
+                         "metrics": {
+                              "time_select": 0.17000293731689453,
+                              "time_anc": 0.05125904083251953,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 132.0,
+                              "fht_10": 191.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2649926401105769,
+                         "metrics": {
+                              "time_select": 0.16600489616394043,
+                              "time_anc": 0.057518720626831055,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 136.0,
+                              "fht_10": 202.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2574092147385783,
+                         "metrics": {
+                              "time_select": 0.132035493850708,
+                              "time_anc": 0.04304981231689453,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 169.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2544191752440674,
+                         "metrics": {
+                              "time_select": 0.16887688636779785,
+                              "time_anc": 0.05354619026184082,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 138.0,
+                              "fht_10": 185.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.6566154956817627,
+          "time_select": 0.7896242141723633,
+          "time_anc": 0.25662994384765625,
+          "unique_id": "bf184462b930067d99664f3237db99ab"
+     },
+     {
+          "algorithm": "The algorithm computes an additive-hybrid centrality score combining exponential core-degeneracy weighting, square-root betweenness moderation, linear eigenvector scaling, and inverse clustering penalty, then applies a deterministic selection with adaptive thresholding based on network density to balance greedy exploitation with structural diversity, using a dynamic candidate pool size that scales with graph fragmentation state.",
+          "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp.get('max_core_k', 1)\n    avg_degree = precomp.get('avg_degree', 1.0)\n    deg_var = precomp.get('degree_variance', 0.0)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    diameter_lcc = precomp.get('diameter_lcc', 1.0)\n    apl_lcc = precomp.get('apl_lcc', 1.0)\n    \n    epsilon = 1e-12\n    \n    # Network density indicator for adaptive thresholding\n    density_indicator = avg_degree / (diameter_lcc + epsilon)\n    \n    # Adaptive pool size: larger pools for denser networks, smaller as we fragment\n    remaining_frac = len(unvisited_nodes) / (len(unvisited_nodes) + graph.number_of_nodes() - len(unvisited_nodes) + epsilon)\n    pool_size = max(3, min(15, int(5 + 10 * density_indicator * remaining_frac)))\n    \n    # Structural diversity bonus: penalize selecting nodes in same neighborhood\n    selected_history = set(graph.graph.get('selected_nodes', []))\n    \n    scores = []\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        degree = n['degree']\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        \n        # Exponential core weighting: strong preference for high-core nodes\n        norm_core = core / (max_core + epsilon)\n        core_score = math.exp(2.0 * norm_core) - 1.0  # exponential amplification\n        \n        # Square-root betweenness: moderate high values without saturation\n        norm_btw = btw / (btw + 1.0 + epsilon)  # soft normalization\n        btw_score = math.sqrt(norm_btw)\n        \n        # Linear eigenvector: direct proportional influence\n        eigen_score = eigen\n        \n        # Inverse clustering penalty: penalize highly clustered nodes (local redundancy)\n        cluster_penalty = 1.0 / (1.0 + clust)\n        \n        # Bridge bonus: extra weight for high betweenness in bridgy networks\n        bridge_bonus = 1.0 + bridge_ratio * btw_score\n        \n        # Neighborhood diversity check: reduce score if many neighbors already selected\n        neighbor_penalty = 1.0\n        if selected_history:\n            # Simple proxy: degree-based estimate of neighbor overlap\n            neighbor_penalty = max(0.5, 1.0 - 0.3 * (degree / (avg_degree + epsilon)) * (len(selected_history) / (len(unvisited_nodes) + len(selected_history) + epsilon)))\n        \n        # Additive-hybrid final score\n        final_score = (0.4 * core_score + 0.35 * btw_score + 0.25 * eigen_score) * cluster_penalty * bridge_bonus * neighbor_penalty\n        \n        scores.append((node, final_score))\n    \n    # Sort and take top pool\n    scores.sort(key=lambda x: x[1], reverse=True)\n    top_pool = scores[:min(pool_size, len(scores))]\n    \n    if len(top_pool) == 1:\n        return top_pool[0][0]\n    \n    # Adaptive thresholding: if top score dominates, take it; else take second for diversity\n    top_score = top_pool[0][1]\n    second_score = top_pool[1][1] if len(top_pool) > 1 else 0\n    \n    # Threshold based on network state: stricter in early stages, looser later\n    dominance_threshold = 0.15 + 0.25 * (1.0 - remaining_frac)  # 0.15 to 0.40\n    \n    if second_score > epsilon and (top_score - second_score) / (top_score + epsilon) > dominance_threshold:\n        # Clear winner\n        return top_pool[0][0]\n    else:\n        # Competitive pool: select based on structural position diversity\n        # Prefer node with higher betweenness among top competitors\n        if len(top_pool) >= 2:\n            # Compare top 2 on betweenness-centric metric for tie-breaking\n            node1, node2 = top_pool[0][0], top_pool[1][0]\n            btw1 = graph.nodes[node1]['betweenness']\n            btw2 = graph.nodes[node2]['betweenness']\n            # Add small randomization only when extremely close\n            if abs(btw1 - btw2) / (max(btw1, btw2, epsilon) + epsilon) < 0.05:\n                return top_pool[0][0] if btw1 >= btw2 else top_pool[1][0]\n            return node1 if btw1 * 1.1 > btw2 else node2  # slight preference for original top\n    \n    return top_pool[0][0]",
+          "objective": 0.25719,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "8ed70ac03c2cac0be9b89c3cd2b86887"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 131.4,
+               "fht_10": 185.8,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2559297414187163,
+                         "metrics": {
+                              "time_select": 0.10320591926574707,
+                              "time_anc": 0.04699993133544922,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 180.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2603931977456383,
+                         "metrics": {
+                              "time_select": 0.11914396286010742,
+                              "time_anc": 0.05527138710021973,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 185.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2645964705348637,
+                         "metrics": {
+                              "time_select": 0.11400771141052246,
+                              "time_anc": 0.05233335494995117,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 138.0,
+                              "fht_10": 207.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.24318494201699128,
+                         "metrics": {
+                              "time_select": 0.08510613441467285,
+                              "time_anc": 0.03881478309631348,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 117.0,
+                              "fht_10": 162.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.26185802808547853,
+                         "metrics": {
+                              "time_select": 0.11394190788269043,
+                              "time_anc": 0.049989938735961914,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 138.0,
+                              "fht_10": 195.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.3765740394592285,
+          "time_select": 0.5354056358337402,
+          "time_anc": 0.2434093952178955,
+          "unique_id": "2735bc4bf226d85642cd94183af513d6"
+     },
+     {
+          "algorithm": "The algorithm computes a multiplicative cascade score combining normalized core-degeneracy impact, logarithmic betweenness amplification, and inverse-square-root eigenvector dampening, then applies a dynamic penalty based on the node's \"structural replaceability\" computed as the product of clustering coefficient and degree-normalized neighborhood density, with final selection probabilistically biased toward nodes with high cascade-to-replaceability ratios using a temperature-scaled softmax over the top-k candidates to balance exploitation and exploration.",
+          "code": "import math\nimport random\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp.get('max_core_k', 1)\n    avg_degree = precomp.get('avg_degree', 1.0)\n    deg_var = precomp.get('degree_variance', 0.0)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    diameter_lcc = precomp.get('diameter_lcc', 1.0)\n    \n    epsilon = 1e-12\n    temperature = 0.3 + 0.4 * bridge_ratio  # adaptive temperature\n    top_k = min(5, max(1, len(unvisited_nodes) // 20 + 3))\n    \n    # Network fragility index: higher means more vulnerable to targeted attack\n    fragility = math.log1p(diameter_lcc) * (1.0 + bridge_ratio) / (1.0 + deg_var / (avg_degree ** 2 + epsilon))\n    \n    candidates = []\n    scores = []\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        degree = n['degree']\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        \n        # Cascade impact: multiplicative combination with non-linear transforms\n        norm_core = (core + 1) / (max_core + 1)\n        core_impact = norm_core ** (1.0 + 0.5 * fragility)  # power amplification based on fragility\n        \n        # Logarithmic betweenness: rewards high betweenness without explosive growth\n        btw_amplified = math.log1p(btw * 100.0) / math.log(101.0)  # normalized to [0,1]\n        \n        # Inverse-square-root eigenvector: dampens pure spectral hubs\n        eigen_dampened = eigen / math.sqrt(eigen + epsilon + 0.1)\n        \n        # Multiplicative cascade score\n        cascade = core_impact * (1.0 + btw_amplified) * (1.0 + 0.3 * eigen_dampened)\n        \n        # Structural replaceability: how easily can network route around this node?\n        # High clustering + normalized degree = high replaceability\n        norm_degree = degree / (avg_degree + epsilon)\n        replaceability = (1.0 + clust) * math.sqrt(norm_degree) / (1.0 + 0.5 * bridge_ratio)\n        \n        # Final ratio: high cascade, low replaceability is ideal\n        ratio = cascade / (replaceability + epsilon)\n        \n        candidates.append((node, ratio))\n        scores.append(ratio)\n    \n    # Select top-k candidates for probabilistic selection\n    candidates.sort(key=lambda x: x[1], reverse=True)\n    top_candidates = candidates[:top_k]\n    \n    if len(top_candidates) == 1:\n        return top_candidates[0][0]\n    \n    # Temperature-scaled softmax over top-k\n    top_scores = [x[1] for x in top_candidates]\n    max_score = max(top_scores)\n    \n    # Numerically stable softmax computation\n    exp_scores = []\n    for s in top_scores:\n        exp_scores.append(math.exp((s - max_score) / temperature))\n    \n    sum_exp = sum(exp_scores)\n    probs = [e / sum_exp for e in exp_scores]\n    \n    # Roulette wheel selection\n    r = random.random()\n    cumsum = 0.0\n    for i, p in enumerate(probs):\n        cumsum += p\n        if r <= cumsum:\n            return top_candidates[i][0]\n    \n    return top_candidates[-1][0]",
+          "objective": 0.25807,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "3c2c09fee797bc210fc00fb872f9085e",
+                    "3c2c09fee797bc210fc00fb872f9085e",
+                    "a4f7395bdc07337aa9b89c0a8938e09f",
+                    "69746e4a3deb33ee2243ea6fbd9c2eaa",
+                    "e66cffb6985ac485493a2d61aadaf34f"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 128.2,
+               "fht_10": 183.0,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.26192610347776796,
+                         "metrics": {
+                              "time_select": 0.1313614845275879,
+                              "time_anc": 0.046135663986206055,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 125.0,
+                              "fht_10": 184.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.25847104374118046,
+                         "metrics": {
+                              "time_select": 0.15548920631408691,
+                              "time_anc": 0.053011178970336914,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 135.0,
+                              "fht_10": 185.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2569956400497673,
+                         "metrics": {
+                              "time_select": 0.1512284278869629,
+                              "time_anc": 0.05225324630737305,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 136.0,
+                              "fht_10": 197.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2551684947107686,
+                         "metrics": {
+                              "time_select": 0.1127934455871582,
+                              "time_anc": 0.039663076400756836,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 164.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.257799879096846,
+                         "metrics": {
+                              "time_select": 0.14886260032653809,
+                              "time_anc": 0.05452871322631836,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 125.0,
+                              "fht_10": 185.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.5385231971740723,
+          "time_select": 0.699735164642334,
+          "time_anc": 0.2455918788909912,
+          "unique_id": "8ed70ac03c2cac0be9b89c3cd2b86887"
+     },
+     {
+          "algorithm": "Adaptive bottleneck centrality with progressive spectral amplification that strengthens early-stage impact based on removal progress",
+          "code": "def select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp.get('max_core_k', 1)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    epsilon = 1e-9\n    \n    inv_max_core = 1.0 / (max_core + epsilon)\n    total_nodes = len(graph.nodes)\n    removal_progress = 1.0 - (len(unvisited_nodes) / total_nodes)\n    \n    # Adaptive amplification: stronger early, stabilized late\n    early_amp = 1.0 + 2.0 * (1.0 - removal_progress) * (1.0 + bridge_ratio)\n    \n    best_node = unvisited_nodes[0]\n    best_score = -1.0\n    \n    for node in unvisited_nodes:\n        nd = graph.nodes[node]\n        core = nd['core_number']\n        btw = nd['betweenness']\n        eigen = nd['eigenvector']\n        clust = nd['clustering']\n        \n        norm_core = core * inv_max_core\n        \n        # Bottleneck: must be strong in both core and bridging\n        bottleneck = norm_core if norm_core < btw else btw\n        \n        # Progressive spectral weight: eigen matters more as removal progresses\n        spectral_weight = 0.5 + removal_progress * 0.5\n        spectral_boost = 1.0 + eigen * spectral_weight * 2.0\n        \n        # Redundancy penalty\n        penalty = 1.0 + clust * (1.0 + bridge_ratio)\n        \n        score = bottleneck * spectral_boost * early_amp / penalty\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node",
+          "objective": 0.25828,
+          "other_inf": {
+               "operator": "t2",
+               "parent": [
+                    "b2f4e4de3e2e3e1ee2cbc791a7c759aa",
+                    "e76a5db3854ea8b21351b8720cd6afbf",
+                    "69746e4a3deb33ee2243ea6fbd9c2eaa"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.2,
+               "fht_10": 189.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.26239418944070897,
+                         "metrics": {
+                              "time_select": 0.05124664306640625,
+                              "time_anc": 0.04603910446166992,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 186.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2673837392376348,
+                         "metrics": {
+                              "time_select": 0.06347537040710449,
+                              "time_anc": 0.05212044715881348,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 135.0,
+                              "fht_10": 193.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.255115639547847,
+                         "metrics": {
+                              "time_select": 0.06367969512939453,
+                              "time_anc": 0.05385446548461914,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 131.0,
+                              "fht_10": 192.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2418716883215108,
+                         "metrics": {
+                              "time_select": 0.045168399810791016,
+                              "time_anc": 0.03970527648925781,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 114.0,
+                              "fht_10": 165.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2646430206338122,
+                         "metrics": {
+                              "time_select": 0.06475043296813965,
+                              "time_anc": 0.0533449649810791,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 138.0,
+                              "fht_10": 212.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.1294827461242676,
+          "time_select": 0.28832054138183594,
+          "time_anc": 0.24506425857543945,
+          "unique_id": "ce22d0ee804e36478e3eefe2daf4443e"
+     }
+]

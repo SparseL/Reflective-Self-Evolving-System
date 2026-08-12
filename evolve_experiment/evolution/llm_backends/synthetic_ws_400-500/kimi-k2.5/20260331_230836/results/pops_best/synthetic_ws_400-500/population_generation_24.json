@@ -1,0 +1,92 @@
+{
+     "algorithm": "The algorithm computes a multiplicative spectral fragility score using a tensor decomposition-inspired approach where node features are combined through progressive dimensional reduction: first fusing coreness and betweenness into a structural anchor score via their harmonic mean, then modulating by a phase-dependent eigenvector decay factor that inverts the conventional eigenvector importance (targeting nodes that bridge disconnected spectral communities), and finally applying a dynamic redundancy penalty based on local clustering weighted by the network's current topological stress (measured by the ratio of remaining high-core nodes to total remaining nodes), with selection priority given to nodes that maximize information entropy reduction in the unvisited subgraph.",
+     "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    avg_deg = precomp.get('avg_degree', 1.0)\n    deg_var = precomp.get('degree_variance', 0.0)\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    \n    total_nodes = len(graph.nodes)\n    remaining = len(unvisited_nodes)\n    removed = total_nodes - remaining\n    progress = removed / total_nodes\n    \n    epsilon = 1e-9\n    \n    # Topological stress: ratio of high-core nodes remaining to total remaining\n    high_core_threshold = max_core * 0.7 if max_core > 0 else 0\n    high_core_count = sum(1 for n in unvisited_nodes if graph.nodes[n]['core_number'] >= high_core_threshold)\n    topo_stress = high_core_count / (remaining + epsilon)\n    \n    # Phase-dependent eigenvector decay: invert eigenvector importance\n    # Early: suppress high eigenvector (spreaders), Late: moderate suppression\n    eigen_decay_exp = 1.0 + 2.0 * (1.0 - progress)  # sharper decay early\n    eigen_phase_factor = 0.3 + 0.4 * progress  # transition from suppression to neutral\n    \n    # Progressive dimensional reduction fusion weights\n    anchor_weight = 0.6 + 0.2 * bridge_ratio  # core-betweenness fusion\n    spectral_weight = 0.4 - 0.1 * bridge_ratio  # eigenvector modulation\n    \n    # Dynamic clustering penalty: increases with topological stress\n    clust_penalty_base = 1.0 + topo_stress * (1.0 + math.sqrt(deg_var) / (avg_deg + epsilon))\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        deg = n['degree']\n        \n        # Dimension 1: Structural anchor (harmonic mean of normalized core and betweenness)\n        norm_core = core / (max_core + epsilon) if max_core > 0 else 0\n        # Harmonic mean: emphasizes balance, penalizes low values in either\n        structural_anchor = (2.0 * norm_core * btw) / (norm_core + btw + epsilon)\n        anchor_boost = structural_anchor ** anchor_weight\n        \n        # Dimension 2: Spectral inversion (decayed eigenvector suppression)\n        # Target nodes with moderate eigenvector that bridge spectral communities\n        eigen_inverted = (1.0 - eigen + epsilon) ** eigen_decay_exp\n        spectral_modulation = eigen_inverted ** spectral_weight\n        # Phase-adjusted: blend inverted with original based on progress\n        spectral_score = eigen_phase_factor * eigen_inverted + (1.0 - eigen_phase_factor) * (1.0 - eigen_inverted)\n        \n        # Multiplicative fusion: tensor-like combination\n        base_score = anchor_boost * spectral_score\n        \n        # Information entropy reduction bonus: prefer nodes bridging degree classes\n        deg_ratio = deg / (avg_deg + epsilon)\n        entropy_reduction = -deg_ratio * math.log(deg_ratio + epsilon) if deg_ratio > 0 else 0\n        entropy_bonus = 0.15 * entropy_reduction * (1.0 - progress)  # diminishes late\n        \n        # Dynamic redundancy penalty: clustering weighted by topological stress\n        # High stress = network fragile = clustering more penalized (redundant nodes hurt more)\n        clust_penalty = clust_penalty_base ** clust\n        redundancy_factor = math.exp(-0.3 * clust * (1.0 + topo_stress))\n        \n        # Final score assembly\n        score = base_score * redundancy_factor + entropy_bonus\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n    \n    return best_node",
+     "objective": 0.25593,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "065a6fd7003d0150a404eee956e1ef0a",
+               "bf184462b930067d99664f3237db99ab",
+               "065a6fd7003d0150a404eee956e1ef0a",
+               "065a6fd7003d0150a404eee956e1ef0a",
+               "6a0ec89a7f6b147c6b9da97f17fb9e24"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 125.2,
+          "fht_10": 181.6,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.25895804405739326,
+                    "metrics": {
+                         "time_select": 0.1738722324371338,
+                         "time_anc": 0.047006845474243164,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 125.0,
+                         "fht_10": 178.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2557230339995398,
+                    "metrics": {
+                         "time_select": 0.20075201988220215,
+                         "time_anc": 0.05066347122192383,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 134.0,
+                         "fht_10": 187.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2647710036765664,
+                    "metrics": {
+                         "time_select": 0.19951701164245605,
+                         "time_anc": 0.053259849548339844,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 132.0,
+                         "fht_10": 197.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.24893859022673953,
+                    "metrics": {
+                         "time_select": 0.1499652862548828,
+                         "time_anc": 0.03951144218444824,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 115.0,
+                         "fht_10": 155.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.251271415688081,
+                    "metrics": {
+                         "time_select": 0.2084958553314209,
+                         "time_anc": 0.053963422775268555,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 120.0,
+                         "fht_10": 191.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.7780334949493408,
+     "time_select": 0.9326024055480957,
+     "time_anc": 0.24440503120422363,
+     "unique_id": "4ca9dcafe898c4ce20433bcf818e81fa"
+}

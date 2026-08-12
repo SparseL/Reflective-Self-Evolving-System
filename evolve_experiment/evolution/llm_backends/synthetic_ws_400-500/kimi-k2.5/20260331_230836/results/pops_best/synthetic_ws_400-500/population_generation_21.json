@@ -1,0 +1,88 @@
+{
+     "algorithm": "A cascading entropy-wave algorithm that uses sigmoid-gated fusion of reciprocal betweenness-core amplification and exponential eigenvector suppression, with adaptive variance-modulated clustering resistance and progressive entropy decay that accelerates disruption through dynamic phase curvature.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    precomp = graph.graph['precomputed']\n    max_core = precomp['max_core_k']\n    bridge_ratio = precomp.get('bridge_ratio_high_bc', 0.0)\n    degree_var = precomp.get('degree_variance', 0.0)\n    avg_deg = precomp.get('avg_degree', 1.0)\n    \n    total_nodes = len(graph.nodes)\n    removed = total_nodes - len(unvisited_nodes)\n    progress = removed / total_nodes\n    \n    # Sigmoid phase curvature: sharper transition around 0.3-0.5 progress\n    sigmoid_mid = 0.4\n    sigmoid_steep = 8.0\n    late_phase = 1.0 / (1.0 + math.exp(-sigmoid_steep * (progress - sigmoid_mid)))\n    early_phase = 1.0 - late_phase\n    \n    # Entropy decay factor: accelerates as more nodes removed\n    entropy_decay = math.exp(-2.0 * progress)\n    \n    # Variance-based modulation for clustering penalty\n    variance_mod = math.tanh(degree_var / (avg_deg ** 2 + 1e-9))\n    \n    epsilon = 1e-9\n    norm_max_core = max_core + epsilon\n    \n    best_node = None\n    best_score = -float('inf')\n    \n    for node in unvisited_nodes:\n        n = graph.nodes[node]\n        core = n['core_number']\n        btw = n['betweenness']\n        eigen = n['eigenvector']\n        clust = n['clustering']\n        deg = n['degree']\n        \n        norm_core = core / norm_max_core\n        \n        # Reciprocal amplification: betweenness and core multiply with harmonic dampening\n        # Early: high betweenness bridges with core anchoring\n        core_btw_product = norm_core * btw\n        core_btw_sum = norm_core + btw + epsilon\n        early_raw = (2.0 * core_btw_product) / core_btw_sum\n        \n        # Apply bridge ratio boost with entropy decay (diminishes as we progress)\n        early_boost = 1.0 + bridge_ratio * entropy_decay\n        early_score = early_raw * early_boost\n        \n        # Late: exponential eigenvector suppression (inverts high eigenvector to target spreaders)\n        # Use (1 - eigen) to suppress high eigenvector nodes, but core-weighted\n        eigen_suppressed = (1.0 - eigen) ** (1.0 + progress)  # grows sharper as progress increases\n        late_raw = norm_core * (1.0 + eigen_suppressed)\n        \n        # Core amplification with diminishing returns for very high cores\n        late_score = late_raw * (1.0 + math.log1p(core)) / (1.0 + 0.1 * core)\n        \n        # Sigmoid-gated fusion\n        score = early_phase * early_score + late_phase * late_score\n        \n        # Adaptive clustering resistance: variance-modulated penalty\n        # Higher variance networks get stronger clustering penalty early\n        clust_resistance = 1.0 + clust * (1.0 + variance_mod * early_phase)\n        score = score / clust_resistance\n        \n        # Degree entropy bonus: prefer nodes that bridge degree classes\n        deg_entropy = -deg * math.log((deg + epsilon) / (avg_deg + epsilon) + epsilon)\n        score += 0.05 * deg_entropy * entropy_decay\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n            \n    return best_node\n\nimport math",
+     "objective": 0.25627,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "b2f4e4de3e2e3e1ee2cbc791a7c759aa"
+          ],
+          "anc_prefix_k": 0.8562343436077366,
+          "fht_50": 127.2,
+          "fht_10": 186.6,
+          "lcc_at_k_frac": 0.8506425127942994,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.26088071069318564,
+                    "metrics": {
+                         "time_select": 0.12197566032409668,
+                         "time_anc": 0.047998905181884766,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 126.0,
+                         "fht_10": 175.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.255569344585432,
+                    "metrics": {
+                         "time_select": 0.14780902862548828,
+                         "time_anc": 0.05291914939880371,
+                         "anc_prefix_k": 0.855658438634884,
+                         "fht_50": 136.0,
+                         "fht_10": 192.0,
+                         "lcc_at_k_frac": 0.8482905982905983,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.26841079476188223,
+                    "metrics": {
+                         "time_select": 0.14599895477294922,
+                         "time_anc": 0.054350852966308594,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 138.0,
+                         "fht_10": 218.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.24480808809519308,
+                    "metrics": {
+                         "time_select": 0.11197614669799805,
+                         "time_anc": 0.04379582405090332,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 117.0,
+                         "fht_10": 159.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.25167429192865465,
+                    "metrics": {
+                         "time_select": 0.15138602256774902,
+                         "time_anc": 0.05368351936340332,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 119.0,
+                         "fht_10": 189.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.5282073020935059,
+     "time_select": 0.6791458129882812,
+     "time_anc": 0.2527482509613037,
+     "unique_id": "065a6fd7003d0150a404eee956e1ef0a"
+}
