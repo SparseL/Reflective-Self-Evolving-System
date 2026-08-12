@@ -1,0 +1,27 @@
+Dataset provenance checklist
+============================
+
+The supplied workspace did not contain authoritative source URLs, version identifiers,
+citations, or redistribution licenses for the real-network files listed below. Complete
+and verify this manifest against the manuscript records before making the package public.
+
+Files requiring provenance and redistribution verification:
+
+- dataset/real/Crime.txt
+- dataset/real/Enron.txt
+- dataset/real/Enron_sampled.txt (derived sample; document the sampling command and seed)
+- dataset/real/HI-II-14.txt
+- dataset/real/HI-II-14_sampled.txt (derived sample; document the sampling command and seed)
+- dataset/real/Youtube.txt
+- dataset/real/Youtube_sampled.txt (derived sample; document the sampling command and seed)
+- dataset/real/Youtube_sample4000.txt (derived sample; document the sampling command and seed)
+- dataset/real/Youtube_sample8000.txt (derived sample; document the sampling command and seed)
+
+For each original dataset, record:
+
+1. Canonical repository or publisher URL.
+2. Dataset version or access date.
+3. Required citation.
+4. License or redistribution terms.
+5. Any preprocessing applied before inclusion.
+
