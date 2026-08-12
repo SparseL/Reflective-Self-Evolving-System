@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import math\n\n    unvisited_set = set(unvisited_nodes)\n    eps = 1e-9\n\n    precomputed = graph.graph.get('precomputed', {})\n    max_core_k = precomputed.get('max_core_k', 1) or 1\n    avg_degree = precomputed.get('avg_degree', 1.0) or 1.0\n    degree_variance = precomputed.get('degree_variance', 1.0) or 1.0\n\n    active_deg_map = {}\n    for node in unvisited_set:\n        active_deg_map[node] = sum(1 for nb in graph.neighbors(node) if nb in unvisited_set)\n\n    max_active_deg = max(active_deg_map.values(), default=1) or 1\n    max_betweenness = max((graph.nodes[n]['betweenness'] for n in unvisited_nodes), default=eps) or eps\n    max_eigenvector = max((graph.nodes[n]['eigenvector'] for n in unvisited_nodes), default=eps) or eps\n\n    best_node = None\n    best_score = -1e18\n\n    for node in unvisited_nodes:\n        core_node = graph.nodes[node]['core_number']\n        active_deg_node = active_deg_map[node]\n        betweenness_node = graph.nodes[node]['betweenness']\n        eigenvector_node = graph.nodes[node]['eigenvector']\n        clust_node = graph.nodes[node]['clustering']\n\n        neighbors_1 = [nb for nb in graph.neighbors(node) if nb in unvisited_set]\n        n1 = len(neighbors_1)\n        nb_set = set(neighbors_1)\n\n        # --- Flow Bottleneck Index ---\n        # Model removal as disrupting current flow: resistance ~ 1/degree\n        # Node is bottleneck if it carries disproportionate flow relative to its neighborhood\n        if n1 == 0:\n            flow_bottleneck = eps\n            conductance_drop = eps\n        else:\n            nb_degs = [active_deg_map[nb] for nb in neighbors_1]\n            # Total resistance if current must detour around node\n            # Effective conductance = sum of 1/(1/d_i) = sum of d_i (parallel resistors)\n            parallel_conductance = sum(nb_degs)\n            # Series resistance proxy: node's degree vs sum of neighbor degrees\n            # High ratio = node is a strong bottleneck\n            series_ratio = active_deg_node / (parallel_conductance / n1 + eps)\n            # Core-weighted conductance drop\n            avg_nb_core = sum(graph.nodes[nb]['core_number'] for nb in neighbors_1) / n1\n            core_contrast = abs(core_node - avg_nb_core) / (max_core_k + eps)\n            flow_bottleneck = math.log1p(active_deg_node) * (1.0 + series_ratio) * (1.0 + core_contrast)\n            # Conductance drop: fraction of total flow disrupted\n            conductance_drop = active_deg_node / (parallel_conductance + eps)\n            conductance_drop = min(conductance_drop, 1.0)\n\n        # --- Spectral Gap Proxy via Core-Shell Divergence ---\n        # KL-divergence-like measure between node's core distribution and graph's\n        # High divergence = node sits at critical spectral boundary\n        if n1 > 0:\n            nb_cores = [graph.nodes[nb]['core_number'] for nb in neighbors_1]\n            # Normalized core distribution of neighbors\n            max_nb_core = max(nb_cores) or 1\n            min_nb_core = min(nb_cores)\n            core_range = (max_nb_core - min_nb_core) / (max_core_k + eps)\n            # Core polarization: how split are neighbors across high/low shells\n            median_core = sorted(nb_cores)[n1 // 2]\n            low_mass = sum(1 for c in nb_cores if c <= median_core) / n1\n            high_mass = 1.0 - low_mass\n            # Entropy of core split (maximized at 0.5/0.5)\n            if low_mass > eps and high_mass > eps:\n                core_split_entropy = -(low_mass * math.log(low_mass) + high_mass * math.log(high_mass))\n                core_split_entropy /= math.log(2)  # normalize to [0,1]\n            else:\n                core_split_entropy = 0.0\n            spectral_gap_proxy = (1.0 + core_range) * (1.0 + core_split_entropy) * (core_node / (max_core_k + eps) + eps)\n        else:\n            spectral_gap_proxy = eps\n            core_range = 0.0\n\n        # --- Ego-net Conductance (Cheeger-inspired) ---\n        # Low ego-net density + high cut edges = high Cheeger ratio = good separator\n        ego_edges = 0\n        for nb in neighbors_1:\n            for nb2 in graph.neighbors(nb):\n                if nb2 in nb_set and nb2 > nb:\n                    ego_edges += 1\n\n        max_ego = n1 * (n1 - 1) / 2.0 if n1 >= 2 else 1.0\n        ego_density = ego_edges / (max_ego + eps)\n        # Cheeger number approximation: cut_edges / volume\n        # cut_edges = n1 (edges from node to neighbors), volume = active_deg_node\n        cheeger_num = n1 / (active_deg_node + n1 + eps)\n        # High cheeger with low ego density = strong separator\n        separator_strength = (1.0 - ego_density) * (1.0 + cheeger_num)\n\n        # --- Component Entropy After Removal ---\n        # Union-find to get components, then compute entropy of size distribution\n        n_comps = 1\n        component_entropy = 0.0\n        size_imbalance = 0.0\n\n        if n1 >= 2:\n            parent = {nb: nb for nb in neighbors_1}\n            sz = {nb: 1 for nb in neighbors_1}\n\n            def find(x):\n                while parent[x] != x:\n                    parent[x] = parent[parent[x]]\n                    x = parent[x]\n                return x\n\n            def union(a, b):\n                ra, rb = find(a), find(b)\n                if ra != rb:\n                    if sz[ra] < sz[rb]:\n                        ra, rb = rb, ra\n                    parent[rb] = ra\n                    sz[ra] += sz[rb]\n\n            for nb1 in neighbors_1:\n                for nb2 in graph.neighbors(nb1):\n                    if nb2 in nb_set and nb2 != nb1:\n                        union(nb1, nb2)\n\n            comp_map = {}\n            for nb in neighbors_1:\n                r = find(nb)\n                comp_map[r] = comp_map.get(r, 0) + 1\n\n            n_comps = len(comp_map)\n            sizes = list(comp_map.values())\n            total = float(n1)\n\n            # Shannon entropy of component size distribution\n            for s in sizes:\n                p = s / total\n                if p > eps:\n                    component_entropy -= p * math.log(p + eps)\n\n            # Normalize by log(n_comps) \u2014 maximized when all components equal size\n            if n_comps > 1:\n                component_entropy /= (math.log(n_comps) + eps)\n                # Size imbalance: pairwise product sum (fragmentation quality)\n                pair_sum = sum(\n                    sizes[i] * sizes[j]\n                    for i in range(len(sizes))\n                    for j in range(i + 1, len(sizes))\n                )\n                size_imbalance = pair_sum / ((total * total / 4.0) + eps)\n\n        # --- 2-hop Resistance Cascade ---\n        # For each 2-hop neighbor, compute expected resistance increase\n        # if current node is removed, weighted by core prominence\n        resistance_cascade = 0.0\n        seen2 = set(neighbors_1)\n        seen2.add(node)\n        for nb in neighbors_1:\n            nb_deg = active_deg_map[nb]\n            nb_core = graph.nodes[nb]['core_number'] / (max_core_k + eps)\n            # Resistance increase for nb: its degree drops by 1, so resistance ~ 1/(deg-1) - 1/deg\n            delta_r_nb = 1.0 / (nb_deg + eps) - 1.0 / (nb_deg + 1.0 + eps)\n            for nb2 in graph.neighbors(nb):\n                if nb2 in unvisited_set and nb2 not in seen2:\n                    nb2_deg = active_deg_map[nb2]\n                    nb2_core = graph.nodes[nb2]['core_number'] / (max_core_k + eps)\n                    # Cascade: nb becoming less connected ripples to nb2\n                    cascade_weight = delta_r_nb * (1.0 + nb_core) * math.log1p(nb2_deg) * (1.0 + nb2_core)\n                    resistance_cascade += cascade_weight\n                    seen2.add(nb2)\n\n        # --- Normalize all terms ---\n        norm_flow = math.log1p(flow_bottleneck) / (math.log1p(max_active_deg * 3.0) + eps)\n        norm_spectral = spectral_gap_proxy  # already [0, ~2]\n        norm_separator = separator_strength  # [0, ~2]\n        norm_cascade = math.log1p(resistance_cascade) / (math.log1p(max_active_deg ** 1.5) + eps)\n        norm_frag = 1.0 + math.log1p(n_comps - 1 + component_entropy + size_imbalance)\n        norm_bc = betweenness_node / (max_betweenness + eps)\n        norm_eig = eigenvector_node / (max_eigenvector + eps)\n        conductance_bonus = 1.0 + conductance_drop\n\n        # Anti-clustering: bridges between sparse regions more impactful\n        anti_clust = 1.0 - clust_node\n\n        # --- Final Score Assembly ---\n        # Primary: flow bottleneck \u00d7 resistance cascade (resistance-based disruption)\n        primary = (norm_flow + eps) * (norm_cascade + eps)\n\n        # Spectral amplifier: spectral gap \u00d7 separator strength\n        spectral_amp = (1.0 + norm_spectral) * (1.0 + norm_separator * 0.5)\n\n        # Fragmentation reward\n        frag_reward = norm_frag * conductance_bonus\n\n        # Structural refinement\n        structural_ref = (1.0 + anti_clust * 0.4) * (1.0 + 0.3 * norm_bc) * (1.0 + 0.1 * norm_eig)\n\n        score = primary * spectral_amp * frag_reward * structural_ref\n\n        if score > best_score:\n            best_score = score\n            best_node = node\n\n    return best_node",
+     "objective": 0.18579,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "74c8306464ff939f378cbff7608c91ba",
+               "16b9c0ae938c07eabdc0fb010fe7e182",
+               "46bdb95b6af230d9976f26093fb5707a",
+               "46bdb95b6af230d9976f26093fb5707a",
+               "4b6513caaf9be5fdcae07b642380cdfd"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 99.0,
+          "fht_10": 112.2,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.18916687616478028,
+                    "metrics": {
+                         "time_select": 3.8357322216033936,
+                         "time_anc": 0.05345487594604492,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 98.0,
+                         "fht_10": 111.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.19117154429156846,
+                    "metrics": {
+                         "time_select": 4.948143482208252,
+                         "time_anc": 0.05445384979248047,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 111.0,
+                         "fht_10": 119.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.1892594455131701,
+                    "metrics": {
+                         "time_select": 5.113374471664429,
+                         "time_anc": 0.05884289741516113,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 108.0,
+                         "fht_10": 119.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.17283695669564483,
+                    "metrics": {
+                         "time_select": 3.728668689727783,
+                         "time_anc": 0.05357933044433594,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 75.0,
+                         "fht_10": 95.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.1865309896574382,
+                    "metrics": {
+                         "time_select": 4.833713531494141,
+                         "time_anc": 0.06549859046936035,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 103.0,
+                         "fht_10": 117.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 23.34654474258423,
+     "time_select": 22.459632396697998,
+     "time_anc": 0.2858295440673828,
+     "unique_id": "626811ada2559934a72bfa452b91641f"
+}

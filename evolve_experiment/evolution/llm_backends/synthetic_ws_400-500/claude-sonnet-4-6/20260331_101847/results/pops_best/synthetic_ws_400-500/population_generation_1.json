@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    unvisited_set = set(unvisited_nodes)\n    \n    # Precompute max values for normalization\n    max_degree = max((graph.nodes[n]['degree'] for n in unvisited_nodes), default=1) or 1\n    max_core = max((graph.nodes[n]['core_number'] for n in unvisited_nodes), default=1) or 1\n    max_betw = max((graph.nodes[n]['betweenness'] for n in unvisited_nodes), default=1e-9) or 1e-9\n    \n    precomputed = graph.graph.get('precomputed', {})\n    global_max_core = precomputed.get('max_core_k', max_core) or 1\n    \n    best_node = None\n    best_score = -1e18\n    \n    for node in unvisited_nodes:\n        deg = graph.nodes[node]['degree']\n        core = graph.nodes[node]['core_number']\n        betw = graph.nodes[node]['betweenness']\n        \n        # Reduced degree of node (collective influence style)\n        reduced_deg = max(deg - 1, 0)\n        \n        # Get active neighbors (still in unvisited set)\n        active_neighbors = [nb for nb in graph.neighbors(node) if nb in unvisited_set]\n        active_deg = len(active_neighbors)\n        \n        # Collective influence at radius 2:\n        # Sum of reduced degrees of neighbors of neighbors (excluding node itself)\n        ci_radius2 = 0.0\n        visited_r2 = set()\n        visited_r2.add(node)\n        visited_r2.update(active_neighbors)\n        \n        for nb in active_neighbors:\n            nb_reduced_deg = max(graph.nodes[nb]['degree'] - 1, 0)\n            ci_radius2 += nb_reduced_deg\n            # Also add radius-2 neighbors contribution\n            for nb2 in graph.neighbors(nb):\n                if nb2 in unvisited_set and nb2 not in visited_r2:\n                    nb2_reduced = max(graph.nodes[nb2]['degree'] - 1, 0)\n                    ci_radius2 += 0.3 * nb2_reduced\n                    visited_r2.add(nb2)\n        \n        # Core shell boundary bonus: nodes at the boundary between core shells\n        # are especially valuable for fragmentation\n        neighbor_cores = [graph.nodes[nb]['core_number'] for nb in active_neighbors] if active_neighbors else [0]\n        max_nb_core = max(neighbor_cores) if neighbor_cores else 0\n        min_nb_core = min(neighbor_cores) if neighbor_cores else 0\n        core_boundary = (max_nb_core - min_nb_core) / (global_max_core + 1e-9)\n        \n        # Normalized collective influence score\n        norm_core = core / max_core\n        norm_betw = betw / max_betw\n        \n        # CI base score (normalized by max possible)\n        ci_score = reduced_deg * ci_radius2 / (max_degree ** 2 + 1e-9)\n        \n        # Composite score: CI drives fragmentation, core/betweenness ensure structural importance\n        # Core boundary bonus targets nodes bridging different k-shell levels\n        score = (\n            0.45 * ci_score +\n            0.25 * norm_core +\n            0.20 * norm_betw +\n            0.10 * core_boundary\n        )\n        \n        # Nonlinear amplification for high-core nodes (they hold the network together)\n        score *= (1.0 + 0.4 * norm_core)\n        \n        if score > best_score:\n            best_score = score\n            best_node = node\n    \n    return best_node",
+     "objective": 0.25721,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "6260d76c5d5513a3fd8166cee322ce6d",
+               "91fad279b7e1e8a503662fb23022f534",
+               "36e33a26839b7037d9fcf93b94a98779",
+               "6260d76c5d5513a3fd8166cee322ce6d",
+               "91fad279b7e1e8a503662fb23022f534"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 132.0,
+          "fht_10": 188.8,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.23884552855761546,
+                    "metrics": {
+                         "time_select": 1.3595139980316162,
+                         "time_anc": 0.051042795181274414,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 128.0,
+                         "fht_10": 175.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.26087260704017967,
+                    "metrics": {
+                         "time_select": 1.5406367778778076,
+                         "time_anc": 0.05953025817871094,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 137.0,
+                         "fht_10": 191.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2585257827785344,
+                    "metrics": {
+                         "time_select": 1.561112642288208,
+                         "time_anc": 0.0545496940612793,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 138.0,
+                         "fht_10": 202.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2662022111067315,
+                    "metrics": {
+                         "time_select": 1.1832444667816162,
+                         "time_anc": 0.050704240798950195,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 120.0,
+                         "fht_10": 175.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2616080694942813,
+                    "metrics": {
+                         "time_select": 1.6553959846496582,
+                         "time_anc": 0.07459783554077148,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 137.0,
+                         "fht_10": 201.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 8.275490283966064,
+     "time_select": 7.299903869628906,
+     "time_anc": 0.29042482376098633,
+     "unique_id": "d53bf6fea1662c7c06bcf10feb7130f8"
+}

@@ -1,0 +1,18 @@
+﻿{
+    "runner":  {
+                   "name":  "deepseek-r1",
+                   "model":  "deepseek-r1",
+                   "api_endpoint":  "api.chatanywhere.tech"
+               },
+    "params":  {
+                   "num_instance":  5,
+                   "pop_size":  6,
+                   "timeout":  600,
+                   "new_run":  false,
+                   "failure_stop_patience":  15,
+                   "n_pop":  30,
+                   "n_proc":  1
+               },
+    "dataset":  "synthetic_ws_400-500",
+    "started_at":  "2026-04-02T22:07:25"
+}
