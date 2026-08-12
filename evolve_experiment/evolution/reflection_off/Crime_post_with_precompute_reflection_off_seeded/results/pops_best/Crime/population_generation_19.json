@@ -1,0 +1,36 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    degree_variance = pre.get('degree_variance', np.var(degree))\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    eig_norm = normalize(eigenvector)\n    betw_norm = normalize(betweenness)\n    clustering_norm = normalize(clustering)\n    core_norm = normalize(core_number)\n    \n    unvisited_set = set(unvisited_nodes)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree, dtype=float)\n    res_deg_norm = residual_degree / (avg_degree + 1e-10)\n    res_deg_weighted = res_deg_norm * np.sqrt(degree_variance + 1e-10)\n    \n    # Score: emphasize residual degree and core number positively,\n    # penalize clustering; add eigenvector and betweenness linearly\n    score = 0.6 * res_deg_weighted + 0.5 * core_norm - 0.8 * clustering_norm + 0.4 * eig_norm + 0.4 * betw_norm\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+     "objective": 0.08505,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "fd06c95255234f68f58a2b3121f3e8ee"
+          ],
+          "anc_prefix_k": 0.5644459182137014,
+          "fht_50": 76.0,
+          "fht_10": 114.0,
+          "lcc_at_k_frac": 0.13751507840772015,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.08505487604440487,
+                    "metrics": {
+                         "time_select": 0.8246626853942871,
+                         "time_anc": 0.3394134044647217,
+                         "anc_prefix_k": 0.5644459182137014,
+                         "fht_50": 76.0,
+                         "fht_10": 114.0,
+                         "lcc_at_k_frac": 0.13751507840772015,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.676525354385376,
+     "time_select": 0.8246626853942871,
+     "time_anc": 0.3394134044647217,
+     "unique_id": "e6c0f17252e1e55b92e1d4b0d25e6232"
+}

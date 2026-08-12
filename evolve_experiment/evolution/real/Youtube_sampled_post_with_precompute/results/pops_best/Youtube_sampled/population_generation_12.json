@@ -1,0 +1,25 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    # {Select the next node by integrating a node's local redundancy (clustering),\n    # global bridging role (betweenness), and neighborhood fragility estimated via\n    # weighted core number disparity among neighbors, favoring nodes that uniquely\n    # connect fragile but diverse core communities.}\n\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-9:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n\n    norm_clust = normalize(clustering)\n    norm_betw = normalize(betweenness)\n    norm_core = normalize(core_number)\n\n    # Compute neighborhood core disparity: std deviation of neighbors' core numbers weighted by inverse clustering\n    neighborhood_core_disp = []\n    for n in unvisited_nodes:\n        nbrs = [nbr for nbr in graph.neighbors(n) if nbr in unvisited_nodes]\n        if nbrs:\n            nbr_cores = np.array([graph.nodes[nbr]['core_number'] for nbr in nbrs], dtype=float)\n            disp = np.std(nbr_cores)\n        else:\n            disp = 0.0\n        neighborhood_core_disp.append(disp)\n    neighborhood_core_disp = np.array(neighborhood_core_disp)\n    norm_neigh_disp = normalize(neighborhood_core_disp)\n\n    # Score integrates inverse clustering (low redundancy), betweenness (bridging),\n    # normalized neighborhood core disparity (diverse fragile neighborhood),\n    # weighted by node core normalized by max_core_k to avoid peripheral bias.\n    score = ( (1 - norm_clust) * (norm_betw ** (0.5 + 0.5 * bridge_ratio)) * norm_neigh_disp ) * (norm_core / (max_core_k + 1e-9))\n\n    if len(score) == 0:\n        return None\n\n    idx = np.argmax(score)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.08986,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "d663f4daf5edfeb90df043139cceff05",
+               "de43037738a79604b722fe5c3624eadc",
+               "2f33904cf15ce2991f0d14ccec673216",
+               "de43037738a79604b722fe5c3624eadc",
+               "090dbc4bf062393c3900547b177cc7f8"
+          ],
+          "anc_prefix_k": 0.450160498952869,
+          "fht_50": 150.0,
+          "fht_10": 721.0,
+          "lcc_at_k_frac": 0.5275453277545328,
+          "k": 430
+     },
+     "problem": null,
+     "time": 180.93607330322266,
+     "time_select": 174.91453766822815,
+     "time_anc": 5.532840251922607,
+     "unique_id": "91b4f3a9739de7bfb0c4b27d1567c05e"
+}

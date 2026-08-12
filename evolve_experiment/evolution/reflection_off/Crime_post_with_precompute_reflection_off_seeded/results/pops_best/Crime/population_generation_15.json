@@ -1,0 +1,36 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes])\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    degree_variance = pre.get('degree_variance', np.var(degree))\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    core_norm = normalize(core_number)\n    betw_norm = normalize(betweenness)\n    clustering_norm = normalize(clustering)\n    eig_norm = normalize(eigenvector)\n    \n    # Harmonic mean helper (avoid div by zero)\n    def harmonic_mean(a, b):\n        return 2 * a * b / (a + b + 1e-10)\n    \n    core_betw_hmean = harmonic_mean(core_norm, betw_norm)\n    \n    # Exponential decay on clustering to penalize highly clustered nodes more steeply\n    clustering_decay = np.exp(-3 * clustering_norm)\n    \n    # Residual degree normalized\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree)\n    res_deg_norm = residual_degree / (avg_degree + 1e-10)\n    \n    # Scale residual degree by degree variance to emphasize nodes in heterogeneous areas\n    res_deg_scaled = res_deg_norm * (1 + degree_variance)\n    \n    # Penalize nodes with low eigenvector centrality to avoid isolated hubs\n    eig_penalty = (1 - eig_norm) * bridge_ratio\n    \n    score = core_betw_hmean * clustering_decay + 0.8 * res_deg_scaled - eig_penalty\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+     "objective": 0.08544,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "e252ebfe73f9429f2db8a712670787cc"
+          ],
+          "anc_prefix_k": 0.5664185884410999,
+          "fht_50": 76.0,
+          "fht_10": 115.0,
+          "lcc_at_k_frac": 0.16164053075995174,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.08543573801473647,
+                    "metrics": {
+                         "time_select": 0.8495240211486816,
+                         "time_anc": 0.3474619388580322,
+                         "anc_prefix_k": 0.5664185884410999,
+                         "fht_50": 76.0,
+                         "fht_10": 115.0,
+                         "lcc_at_k_frac": 0.16164053075995174,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.712651252746582,
+     "time_select": 0.8495240211486816,
+     "time_anc": 0.3474619388580322,
+     "unique_id": "8342444ea592f12da2fc949d867fe3d1"
+}

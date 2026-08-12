@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    degree_variance = pre.get('degree_variance', 1.0)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n\n    degrees = [graph.nodes[n]['degree'] for n in unvisited_nodes]\n    eigenvectors = [graph.nodes[n]['eigenvector'] for n in unvisited_nodes]\n    clusterings = [graph.nodes[n]['clustering'] for n in unvisited_nodes]\n\n    def min_max_norm(arr):\n        mn, mx = min(arr), max(arr)\n        if mx - mn < 1e-9:\n            return [0.0] * len(arr)\n        return [(x - mn) / (mx - mn) for x in arr]\n\n    deg_norm = min_max_norm(degrees)\n    eig_norm = min_max_norm(eigenvectors)\n    clust = clusterings\n\n    # Weights adapt to global graph structure emphasizing degree if variance is high,\n    # eigenvector if bridge ratio is high, balancing accordingly\n    w_deg = 0.6 * degree_variance + 0.4 * (1 - bridge_ratio)\n    w_eig = 0.7 * bridge_ratio + 0.3 * (1 - degree_variance)\n    total_w = w_deg + w_eig\n    w_deg /= total_w\n    w_eig /= total_w\n\n    best_score = -float('inf')\n    next_node = None\n\n    for i, n in enumerate(unvisited_nodes):\n        d = deg_norm[i]\n        e = eig_norm[i]\n        # Harmonic mean of degree and eigenvector with dynamic weights to emphasize nodes\n        if d > 0 and e > 0:\n            harm_mean = (w_deg + w_eig) / (w_deg / d + w_eig / e)\n        else:\n            harm_mean = 0 if (d == 0 and e == 0) else (d + e)  # fallback\n\n        # Exponential penalty on clustering to avoid clustered nodes: exp(-5 * clustering)\n        penalty = pow(2.718281828459045, -5 * clust[i])\n\n        score = harm_mean * penalty\n\n        if score > best_score:\n            best_score = score\n            next_node = n\n\n    return next_node",
+     "objective": 0.31998,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "7bc8734121c89f8abb560ab46789aa76",
+               "7bc8734121c89f8abb560ab46789aa76",
+               "575b67a8372dccc5f55050005b22c01b",
+               "693fd299cdd5eaac6025f25cbdc3d5e6",
+               "03d908199a9539d0aca3daa4384e6835"
+          ],
+          "anc_prefix_k": 0.856459021688355,
+          "fht_50": 292.6,
+          "fht_10": 641.4,
+          "lcc_at_k_frac": 0.8497999999999999,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.32032659659659657,
+                    "metrics": {
+                         "time_select": 0.7844638824462891,
+                         "time_anc": 0.30475854873657227,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 649.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.31891794394394396,
+                    "metrics": {
+                         "time_select": 0.7682311534881592,
+                         "time_anc": 0.32195401191711426,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 632.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.32098668468468466,
+                    "metrics": {
+                         "time_select": 0.7583670616149902,
+                         "time_anc": 0.2844407558441162,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 292.0,
+                         "fht_10": 647.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.3195693133133133,
+                    "metrics": {
+                         "time_select": 0.7724361419677734,
+                         "time_anc": 0.3001124858856201,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 639.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.3200798938938939,
+                    "metrics": {
+                         "time_select": 0.7497262954711914,
+                         "time_anc": 0.3149440288543701,
+                         "anc_prefix_k": 0.8562664130797464,
+                         "fht_50": 292.0,
+                         "fht_10": 640.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 6.108926773071289,
+     "time_select": 3.8332245349884033,
+     "time_anc": 1.526209831237793,
+     "unique_id": "bbd7ad49f426c57d89726e1ea052f913"
+}

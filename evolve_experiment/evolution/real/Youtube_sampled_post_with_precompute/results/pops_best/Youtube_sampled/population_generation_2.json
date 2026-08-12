@@ -1,0 +1,25 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    # Access precomputed global features for efficiency\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 0)\n\n    # Extract attributes arrays\n    betweenness_vals = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eigenvector_vals = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    clustering_vals = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    degree_vals = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n\n    # Normalize betweenness and eigenvector to [0,1] with min-max scaling\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-9:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n\n    norm_betw = normalize(betweenness_vals)\n    norm_eig = normalize(eigenvector_vals)\n\n    # Compute combined centrality score as product (emphasizes nodes scoring high in both)\n    centrality_score = norm_betw * norm_eig\n\n    # Exponential penalty on clustering to prefer nodes in sparse neighborhoods\n    penalty = np.exp(-5 * clustering_vals)\n\n    # Novelty score is product of centrality_score and penalty\n    novelty_score = centrality_score * penalty\n\n    # In case of ties, break by selecting node with degree closer to average degree (minimize absolute difference)\n    max_score = novelty_score.max()\n    candidates = np.where(novelty_score == max_score)[0]\n\n    if len(candidates) == 1:\n        idx = candidates[0]\n    else:\n        deg_diffs = np.abs(degree_vals[candidates] - avg_degree)\n        tie_break_idx = np.argmin(deg_diffs)\n        idx = candidates[tie_break_idx]\n\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.09189,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "e79c0414d265e0e337e4c8e449930b21",
+               "43f190a0f26768caefb4af8391d5338b",
+               "09429a634b4417cfa731870ac599bc6c",
+               "fc2404bc5316fd89bf70194f2c609302",
+               "e79c0414d265e0e337e4c8e449930b21"
+          ],
+          "anc_prefix_k": 0.45807114727648146,
+          "fht_50": 167.0,
+          "fht_10": 728.0,
+          "lcc_at_k_frac": 0.5327754532775453,
+          "k": 430
+     },
+     "problem": null,
+     "time": 14.988385915756226,
+     "time_select": 8.390799283981323,
+     "time_anc": 6.293731451034546,
+     "unique_id": "b9c6a04d3078402cd60a90088c0c1486"
+}

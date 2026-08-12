@@ -1,0 +1,25 @@
+{
+     "algorithm": "Select the next node by identifying unvisited nodes whose removal maximizes the decrease in a custom local connectivity score defined as the product of node degree and (1 - clustering), weighted inversely by their core number to prioritize peripheral influential nodes, and break ties by choosing the node with the lowest eigenvector centrality to avoid selecting globally dominant hubs prematurely.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    pre = graph.graph['precomputed']\n    \n    # Pre-extract global parameters for weighting\n    degree_variance = pre['degree_variance']\n    max_core_k = pre['max_core_k']\n    \n    # Calculate a local connectivity impact score for each candidate node:\n    # Score = (degree * (1 - clustering)) / (core_number + 1)\n    # Tie-breaker: prefer nodes with minimal eigenvector centrality\n    \n    candidates = []\n    for n in unvisited_nodes:\n        deg = graph.nodes[n]['degree']\n        clust = graph.nodes[n]['clustering']\n        core = graph.nodes[n]['core_number']\n        eig = graph.nodes[n]['eigenvector']\n        \n        local_score = (deg * (1 - clust)) / (core + 1)\n        candidates.append((local_score, -eig, n))  # negative eig for ascending order\n    \n    # Select node with max local_score; in tie, min eigenvector\n    candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)\n    next_node = candidates[0][2]\n    return next_node",
+     "objective": 0.05744,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "f511394536b52f8d7e1515ab6f4f8848",
+               "3e1442c5ec949d3636fc0a9dbf664b00",
+               "aebc4b668bb2dad6ca199a4b846bc950",
+               "9e085db9753677f56c5d00fc81e5661c",
+               "5f798b977cde045f6028a44e1d2a1948"
+          ],
+          "anc_prefix_k": 0.3766008951131859,
+          "fht_50": 133.0,
+          "fht_10": 401.0,
+          "lcc_at_k_frac": 0.23933333333333334,
+          "k": 450
+     },
+     "problem": null,
+     "time": 21.183907747268677,
+     "time_select": 10.792414665222168,
+     "time_anc": 10.163817644119263,
+     "unique_id": "ae47d13c3bb606577e8770708011d901"
+}

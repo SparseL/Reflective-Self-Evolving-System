@@ -1,0 +1,88 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import math\n    eps = 1e-9\n    pre = graph.graph.get('precomputed', {})\n\n    unvisited_set = set(unvisited_nodes)\n\n    avg_degree = pre.get('avg_degree', 1.0)\n    apl_lcc = pre.get('apl_lcc', 10.0)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n\n    residual_degs = []\n    core_nums = []\n    eigens = []\n\n    for n in unvisited_nodes:\n        nbrs = list(graph.neighbors(n))\n        res_deg = sum(1 for v in nbrs if v in unvisited_set)\n        residual_degs.append(res_deg)\n        core_nums.append(graph.nodes[n].get('core_number', 0))\n        eigens.append(graph.nodes[n].get('eigenvector', 0.0))\n\n    def normalize(vals):\n        mn, mx = min(vals), max(vals)\n        if mx - mn < eps:\n            return [0.5] * len(vals)\n        return [(v - mn) / (mx - mn) for v in vals]\n\n    residual_deg_n = normalize(residual_degs)\n    core_nums_n = normalize(core_nums)\n    eigens_n = normalize(eigens)\n\n    # Adaptive scale factor to balance early disruption (short apl_lcc) and robustness (bridge ratio)\n    scale = (1 / (1 + apl_lcc)) * min(max(bridge_ratio, 0.01), 1.0) + eps\n\n    best_score = -float('inf')\n    best_node = None\n\n    for i, n in enumerate(unvisited_nodes):\n        # Weighted sum score: residual degree (importance of immediate neighbors),\n        # core number (k-core connectivity), eigenvector (global influence)\n        score = scale * (\n            0.5 * residual_deg_n[i] + \n            0.3 * core_nums_n[i] + \n            0.2 * eigens_n[i]\n        )\n        if score > best_score:\n            best_score = score\n            best_node = n\n\n    return best_node",
+     "objective": 0.26793,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "e2d22e563e80e2b6edb1d9c87d1eebdc"
+          ],
+          "anc_prefix_k": 0.856022937604271,
+          "fht_50": 281.4,
+          "fht_10": 454.4,
+          "lcc_at_k_frac": 0.8486,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.26901605005005,
+                    "metrics": {
+                         "time_select": 1.3184897899627686,
+                         "time_anc": 0.28939342498779297,
+                         "anc_prefix_k": 0.8564617684351018,
+                         "fht_50": 282.0,
+                         "fht_10": 459.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.26730686086086086,
+                    "metrics": {
+                         "time_select": 1.3029320240020752,
+                         "time_anc": 0.29247307777404785,
+                         "anc_prefix_k": 0.8553782849516183,
+                         "fht_50": 282.0,
+                         "fht_10": 453.0,
+                         "lcc_at_k_frac": 0.848,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.270896996996997,
+                    "metrics": {
+                         "time_select": 1.345391035079956,
+                         "time_anc": 0.29770636558532715,
+                         "anc_prefix_k": 0.8562198865532199,
+                         "fht_50": 283.0,
+                         "fht_10": 461.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2630268668668669,
+                    "metrics": {
+                         "time_select": 1.3002753257751465,
+                         "time_anc": 0.28800320625305176,
+                         "anc_prefix_k": 0.855742022022022,
+                         "fht_50": 279.0,
+                         "fht_10": 439.0,
+                         "lcc_at_k_frac": 0.848,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.26942203403403403,
+                    "metrics": {
+                         "time_select": 1.3526575565338135,
+                         "time_anc": 0.3020598888397217,
+                         "anc_prefix_k": 0.8563127260593927,
+                         "fht_50": 281.0,
+                         "fht_10": 460.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 8.836708307266235,
+     "time_select": 6.61974573135376,
+     "time_anc": 1.4696359634399414,
+     "unique_id": "1892a92672548047508b41e77d70484e"
+}

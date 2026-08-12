@@ -1,0 +1,92 @@
+{
+     "algorithm": "node",
+     "code": "import numpy as np\nimport networkx as nx\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    max_core_k = pre.get('max_core_k', 1)\n\n    unvisited_set = set(unvisited_nodes)\n    n = len(unvisited_nodes)\n\n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-12:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n\n    deg_n = norm(degree)\n    clust_n = norm(clustering)\n    core_n = norm(core)\n    betw_n = norm(np.log1p(betw))\n    eig_n = norm(eig)\n\n    neighbors_list = [set(graph.neighbors(node)) for node in unvisited_nodes]\n\n    # Approximate incremental disruption via estimated local average shortest path length increase:\n    # For each candidate node, consider the induced subgraph on its unvisited neighbors + node,\n    # then estimate average shortest path length (ASPL) before and after hypothetical removal of node,\n    # disruption gain = ASPL after removal - ASPL before (high means node critical locally).\n    disruption_gain = np.zeros(n, dtype=float)\n    for i, node in enumerate(unvisited_nodes):\n        local_subnodes = neighbors_list[i] | {node}\n        # Keep only unvisited nodes\n        local_subnodes = local_subnodes & unvisited_set\n        if len(local_subnodes) < 3:\n            disruption_gain[i] = 0.0\n            continue\n        subgraph = graph.subgraph(local_subnodes)\n        try:\n            aspl_before = nx.average_shortest_path_length(subgraph)\n        except:\n            # disconnected small subgraph: treat as high disruption potential\n            disruption_gain[i] = 1.0\n            continue\n        # Removal sim: remove candidate node from subgraph nodes\n        after_nodes = local_subnodes - {node}\n        if len(after_nodes) < 2:\n            disruption_gain[i] = 1.0\n            continue\n        subgraph_after = graph.subgraph(after_nodes)\n        try:\n            aspl_after = nx.average_shortest_path_length(subgraph_after)\n        except:\n            disruption_gain[i] = 1.0\n            continue\n        disruption_gain[i] = aspl_after - aspl_before\n\n    disruption_gain_n = norm(disruption_gain)\n\n    # Composite score:\n    # Emphasize bridging centrality and core, penalize high clustering,\n    # amplify nodes with higher local disruption gain\n    score = (bridge_ratio * betw_n + (1 - bridge_ratio) * core_n) * disruption_gain_n * (1 - clust_n)\n\n    idx = np.argmax(score)\n    next_node = unvisited_nodes[idx]\n\n    return next_node",
+     "objective": 0.20305,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "c22d913a1d9132160673a61a36ac0fdd",
+               "a9372c9682889d21f45bb6caf7e1e93f",
+               "c22d913a1d9132160673a61a36ac0fdd",
+               "b60d2dd1f1fd09981b0bea3a5b801d78",
+               "05fd4b2db8ed89ca404a8bca32756810"
+          ],
+          "anc_prefix_k": 0.8565071738405072,
+          "fht_50": 251.6,
+          "fht_10": 277.4,
+          "lcc_at_k_frac": 0.85,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.20513483083083084,
+                    "metrics": {
+                         "time_select": 126.58868432044983,
+                         "time_anc": 0.2583892345428467,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 256.0,
+                         "fht_10": 282.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.20298152152152152,
+                    "metrics": {
+                         "time_select": 123.83186626434326,
+                         "time_anc": 0.2671818733215332,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 256.0,
+                         "fht_10": 273.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.198664988988989,
+                    "metrics": {
+                         "time_select": 122.17347931861877,
+                         "time_anc": 0.2701129913330078,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 238.0,
+                         "fht_10": 270.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.20815006206206207,
+                    "metrics": {
+                         "time_select": 120.37036943435669,
+                         "time_anc": 0.2570955753326416,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 260.0,
+                         "fht_10": 286.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.20033557357357357,
+                    "metrics": {
+                         "time_select": 122.83474493026733,
+                         "time_anc": 0.26479196548461914,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 248.0,
+                         "fht_10": 276.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 617.7466447353363,
+     "time_select": 615.7991442680359,
+     "time_anc": 1.3175716400146484,
+     "unique_id": "e298d78c59fbd7e07c0c1f0ad124e107"
+}

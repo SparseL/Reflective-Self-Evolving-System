@@ -1,0 +1,36 @@
+{
+     "algorithm": "Select the next node by linearly combining normalized eigenvector centrality and betweenness centrality, weighted by a decreasing exponential of clustering coefficient to favor influential but less locally clustered nodes, and break ties by prioritizing nodes with higher core number.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx == mn:\n            return np.ones_like(arr)\n        return (arr - mn) / (mx - mn) + 1e-8\n\n    norm_betw = normalize(betweenness)\n    norm_eig = normalize(eigenvector)\n    norm_core = normalize(core)\n    norm_clust = normalize(clustering)\n\n    # Exponential decay on clustering to reduce impact of highly clustered nodes\n    decay_clust = np.exp(-3 * norm_clust)\n\n    # Linear combination weighted by clustering decay\n    scores = (0.6 * norm_eig + 0.4 * norm_betw) * decay_clust\n\n    # Tie break: if multiple max scores, select node with highest core number\n    max_score = np.max(scores)\n    candidates = np.where(scores == max_score)[0]\n    if len(candidates) > 1:\n        candidate_cores = norm_core[candidates]\n        idx = candidates[np.argmax(candidate_cores)]\n    else:\n        idx = candidates[0]\n\n    next_node = unvisited_nodes[idx]\n\n    return next_node",
+     "objective": 0.09132,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "6d217510cc000f9d39fd5e03a37b1f29"
+          ],
+          "anc_prefix_k": 0.4552682882729941,
+          "fht_50": 161.0,
+          "fht_10": 725.0,
+          "lcc_at_k_frac": 0.5212691771269177,
+          "k": 430,
+          "detailed_results": [
+               {
+                    "instance": "Youtube_sampled",
+                    "objective": 0.09132483632736683,
+                    "metrics": {
+                         "time_select": 6.345826625823975,
+                         "time_anc": 4.529064893722534,
+                         "anc_prefix_k": 0.4552682882729941,
+                         "fht_50": 161.0,
+                         "fht_10": 725.0,
+                         "lcc_at_k_frac": 0.5212691771269177,
+                         "k": 430
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 11.41274380683899,
+     "time_select": 6.345826625823975,
+     "time_anc": 4.529064893722534,
+     "unique_id": "4bea09eb045b420bc8d6654b867e481c"
+}

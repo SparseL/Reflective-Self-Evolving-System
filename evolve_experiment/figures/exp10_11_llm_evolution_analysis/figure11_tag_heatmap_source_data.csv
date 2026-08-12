@@ -1,0 +1,31 @@
+model,tag,mean_weight_over_improvements
+Claude Sonnet,Bridge / Boundary,0.224527887571
+Claude Sonnet,Centrality Mix,0.181809416784
+Claude Sonnet,Core / Degree,0.210994213232
+Claude Sonnet,Local Cohesion,0.263326081421
+Claude Sonnet,Spectral / Path,0.045172219085
+Claude Sonnet,Adaptive Weighting,0.074170181907
+DeepSeek-R1,Bridge / Boundary,0.144988835253
+DeepSeek-R1,Centrality Mix,0.269300229718
+DeepSeek-R1,Core / Degree,0.204891285729
+DeepSeek-R1,Local Cohesion,0.130429691269
+DeepSeek-R1,Spectral / Path,0.135787915161
+DeepSeek-R1,Adaptive Weighting,0.114602042870
+Gemini,Bridge / Boundary,0.146451982956
+Gemini,Centrality Mix,0.342862995739
+Gemini,Core / Degree,0.218324593030
+Gemini,Local Cohesion,0.228201136239
+Gemini,Spectral / Path,0.035398230088
+Gemini,Adaptive Weighting,0.028761061947
+GPT-5.1-Codex,Bridge / Boundary,0.170149458385
+GPT-5.1-Codex,Centrality Mix,0.154764843000
+GPT-5.1-Codex,Core / Degree,0.170149458385
+GPT-5.1-Codex,Local Cohesion,0.175497051968
+GPT-5.1-Codex,Spectral / Path,0.188331276567
+GPT-5.1-Codex,Adaptive Weighting,0.141107911696
+Kimi,Bridge / Boundary,0.130628107544
+Kimi,Centrality Mix,0.209587927218
+Kimi,Core / Degree,0.177029824377
+Kimi,Local Cohesion,0.099514274714
+Kimi,Spectral / Path,0.060489403112
+Kimi,Adaptive Weighting,0.322750463035

@@ -1,0 +1,19 @@
+{
+     "algorithm": "At each step, select the next node by scoring unvisited nodes using a combined metric that ranks nodes higher if they have above-average betweenness centrality weighted with their core number and degree, penalized by clustering coefficient to favor bridging nodes that maintain influence across cores but avoid tightly-knit communities.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    # Precomputed global stats\n    avg_degree = graph.graph['precomputed']['avg_degree']\n    degree_variance = graph.graph['precomputed']['degree_variance']\n    max_core_k = graph.graph['precomputed']['max_core_k']\n    bridge_ratio_high_bc = graph.graph['precomputed']['bridge_ratio_high_bc']\n\n    next_node = None\n    max_score = float('-inf')\n\n    for node in unvisited_nodes:\n        deg = graph.nodes[node]['degree']\n        bc = graph.nodes[node]['betweenness']\n        core = graph.nodes[node]['core_number']\n        clust = graph.nodes[node]['clustering']\n        # Normalize betweenness by max core number and degree to emphasize structural influence\n        # Penalize high clustering to avoid nodes embedded in tight communities\n        score = (bc / (core + 1)) * (deg / (avg_degree + 1)) - clust\n        if score > max_score:\n            max_score = score\n            next_node = node\n\n    return next_node",
+     "objective": 0.06364,
+     "other_inf": {
+          "operator": "i1",
+          "parent": [],
+          "anc_prefix_k": 0.4065262455386363,
+          "fht_50": 144.0,
+          "fht_10": 445.0,
+          "lcc_at_k_frac": 0.31033333333333335,
+          "k": 450
+     },
+     "problem": null,
+     "time": 22.108588695526123,
+     "time_select": 10.267313718795776,
+     "time_anc": 11.558838605880737,
+     "unique_id": "3e1442c5ec949d3636fc0a9dbf664b00"
+}

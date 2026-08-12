@@ -1,0 +1,21 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    degree_variance = pre.get('degree_variance', 1) + 1e-9\n    max_core_k = pre.get('max_core_k', 1)\n\n    n = len(unvisited_nodes)\n    if n == 0:\n        return None\n\n    degree_arr = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clustering_arr = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_arr = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betweenness_arr = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eigenvector_arr = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-9:\n            return np.ones_like(arr)\n        return (arr - mn) / (mx - mn) + 1e-9\n\n    norm_degree = normalize(degree_arr)\n    norm_clustering = normalize(clustering_arr)\n    norm_core = normalize(core_arr)\n    norm_betw = normalize(betweenness_arr)\n    norm_eigenv = normalize(eigenvector_arr)\n\n    # Neighborhood vulnerability: average inverse degree of neighbors (lower degree neighbors are vulnerable)\n    neighborhood_vuln = []\n    for i, node in enumerate(unvisited_nodes):\n        nbrs = [nbr for nbr in graph.neighbors(node) if nbr in unvisited_nodes]\n        if nbrs:\n            nbr_degs = np.array([graph.nodes[nbr]['degree'] for nbr in nbrs], dtype=float)\n            inv_deg_avg = np.mean(1 / (nbr_degs + 1e-9))\n        else:\n            inv_deg_avg = 0.0\n        neighborhood_vuln.append(inv_deg_avg)\n    neighborhood_vuln = np.array(neighborhood_vuln)\n    norm_vuln = normalize(neighborhood_vuln)\n\n    # Harmonic mean of betweenness and eigenvector centrality to emphasize nodes important globally\n    centrality_hmean = 2 / (1 / norm_betw + 1 / norm_eigenv + 1e-9)\n\n    # Degree deviation penalty (favor nodes closer to average degree)\n    deg_deviation = np.abs(degree_arr - avg_degree) / np.sqrt(degree_variance)\n\n    # Final score: high centrality * (1 - clustering) * neighborhood vulnerability, penalized by degree deviation, scaled by core number\n    score = centrality_hmean * (1 - norm_clustering) * norm_vuln\n    score /= (1 + deg_deviation)\n    score *= (norm_core / (max_core_k + 1e-9))\n\n    idx = np.argmax(score)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.08519,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "b28d641d8057db18d0c41b09f2651082"
+          ],
+          "anc_prefix_k": 0.4305639115645554,
+          "fht_50": 133.0,
+          "fht_10": 713.0,
+          "lcc_at_k_frac": 0.49546722454672243,
+          "k": 430
+     },
+     "problem": null,
+     "time": 299.5521876811981,
+     "time_select": 291.4909157752991,
+     "time_anc": 7.631251096725464,
+     "unique_id": "5b8bd7bd3a5660eb4936146285c13637"
+}

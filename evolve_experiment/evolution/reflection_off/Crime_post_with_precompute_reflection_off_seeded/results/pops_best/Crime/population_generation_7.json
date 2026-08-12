@@ -1,0 +1,36 @@
+{
+     "algorithm": "The algorithm selects the next node by scoring unvisited nodes based on a weighted sum of normalized degree and clustering coefficient attributes, prioritizing nodes that have high degree but low clustering (i.e., nodes likely acting as bridges), and chooses the node with the maximum such score to balance immediate disruption and network fragmentation.",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    # Attributes used\n    attrs = ['degree', 'clustering']\n\n    # Retrieve precomputed min/max for normalization if available, else compute here\n    # To save complexity, normalize vector-wise for unvisited nodes only\n    vectors = []\n    for n in unvisited_nodes:\n        vec = np.array([graph.nodes[n][a] for a in attrs], dtype=float)\n        vectors.append(vec)\n    vectors = np.array(vectors)  # shape (num_unvisited, 2)\n\n    # Normalize attributes column-wise to [0,1]\n    min_vals = vectors.min(axis=0)\n    max_vals = vectors.max(axis=0)\n    rng = max_vals - min_vals\n    rng[rng == 0] = 1\n    norm_vectors = (vectors - min_vals) / rng\n\n    # Score = normalized degree * (1 - normalized clustering)\n    deg_norm = norm_vectors[:, 0]\n    clustering_norm = norm_vectors[:, 1]\n    scores = deg_norm * (1 - clustering_norm)\n\n    next_idx = np.argmax(scores)\n    next_node = unvisited_nodes[next_idx]\n\n    return next_node",
+     "objective": 0.09083,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "983d9f13b2a3e291f635259007dd4087"
+          ],
+          "anc_prefix_k": 0.5897108160188943,
+          "fht_50": 74.0,
+          "fht_10": 132.0,
+          "lcc_at_k_frac": 0.3823884197828709,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.09083036056650717,
+                    "metrics": {
+                         "time_select": 0.5936002731323242,
+                         "time_anc": 0.3282649517059326,
+                         "anc_prefix_k": 0.5897108160188943,
+                         "fht_50": 74.0,
+                         "fht_10": 132.0,
+                         "lcc_at_k_frac": 0.3823884197828709,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.4306912422180176,
+     "time_select": 0.5936002731323242,
+     "time_anc": 0.3282649517059326,
+     "unique_id": "2eea7006b5ca56e4170e0ed60012ac19"
+}

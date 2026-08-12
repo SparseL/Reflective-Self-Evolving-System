@@ -1,0 +1,21 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    # Read precomputed global features\n    degree_variance = graph.graph['precomputed']['degree_variance']\n    apl_lcc = graph.graph['precomputed']['apl_lcc']\n    \n    nodes = unvisited_nodes\n    # Extract node features\n    betweenness = {n: graph.nodes[n]['betweenness'] for n in nodes}\n    clustering = {n: graph.nodes[n]['clustering'] for n in nodes}\n    degree = {n: graph.nodes[n]['degree'] for n in nodes}\n    eigenvector = {n: graph.nodes[n]['eigenvector'] for n in nodes}\n    \n    # Normalize features to [0,1]\n    def normalize(d):\n        vals = list(d.values())\n        min_v, max_v = min(vals), max(vals)\n        if max_v - min_v < 1e-12:\n            return {k:0 for k in d}\n        return {k: (v - min_v)/(max_v - min_v) for k,v in d.items()}\n    \n    bet_n = normalize(betweenness)\n    clust_n = normalize(clustering)\n    deg_n = normalize(degree)\n    eig_n = normalize(eigenvector)\n    \n    # Adaptive weights based on global degree variance and average path length\n    w_deg = 0.5 * (degree_variance / (degree_variance + 1)) + 0.1\n    w_clust = 0.4 * (apl_lcc / (apl_lcc + 1)) + 0.1\n    # Inverse weighting for betweenness and eigenvector to diversify selection\n    w_bet = 0.3 * (1 - min(1, bet_n[max(bet_n, key=bet_n.get)])) + 0.1\n    w_eig = 0.3 * (1 - min(1, eig_n[max(eig_n, key=eig_n.get)])) + 0.1\n    \n    scores = {}\n    for n in nodes:\n        score = (\n            w_deg * deg_n[n] + \n            w_clust * (1 - clust_n[n]) +\n            w_bet * (1 - bet_n[n]) +\n            w_eig * (1 - eig_n[n])\n        )\n        scores[n] = score\n    \n    next_node = max(scores, key=scores.get)\n    return next_node",
+     "objective": 0.06234,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "9e085db9753677f56c5d00fc81e5661c"
+          ],
+          "anc_prefix_k": 0.4094665155051684,
+          "fht_50": 147.0,
+          "fht_10": 435.0,
+          "lcc_at_k_frac": 0.2896666666666667,
+          "k": 450
+     },
+     "problem": null,
+     "time": 38.282265186309814,
+     "time_select": 30.72098422050476,
+     "time_anc": 7.044577360153198,
+     "unique_id": "f511394536b52f8d7e1515ab6f4f8848"
+}

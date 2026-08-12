@@ -1,0 +1,21 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)  # fallback to 1\n    degree_variance = pre.get('degree_variance', 1)  # fallback to 1\n\n    betw_vals = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eig_vals = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    clustering_vals = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    degree_vals = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-9:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n\n    norm_betw = normalize(betw_vals)\n    norm_eig = normalize(eig_vals)\n    norm_clust = normalize(clustering_vals)\n    norm_degree = normalize(degree_vals)\n\n    # Weight betweenness more for early disruption, eigenvector for sustained impact\n    combined_score = 0.7 * norm_betw + 0.3 * norm_eig\n\n    # Penalize nodes with high clustering and degree significantly below average\n    degree_penalty = np.exp(-3 * np.maximum(0, (avg_degree - degree_vals) / (avg_degree + 1e-9)))\n    clustering_penalty = np.exp(-4 * norm_clust)\n\n    penalty = degree_penalty * clustering_penalty / (degree_variance + 1e-9)\n\n    final_score = combined_score * penalty\n\n    max_score = final_score.max()\n    candidates = np.where(final_score == max_score)[0]\n\n    if len(candidates) == 1:\n        idx = candidates[0]\n    else:\n        # Tie break by max core number\n        core_vals = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n        tie_cores = core_vals[candidates]\n        idx = candidates[np.argmax(tie_cores)]\n\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.09082,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "13b492ba7b1f7952e4dddbb862284c22"
+          ],
+          "anc_prefix_k": 0.45579547397455555,
+          "fht_50": 160.0,
+          "fht_10": 705.0,
+          "lcc_at_k_frac": 0.5275453277545328,
+          "k": 430
+     },
+     "problem": null,
+     "time": 17.87303876876831,
+     "time_select": 9.652207851409912,
+     "time_anc": 7.833333969116211,
+     "unique_id": "2f33904cf15ce2991f0d14ccec673216"
+}

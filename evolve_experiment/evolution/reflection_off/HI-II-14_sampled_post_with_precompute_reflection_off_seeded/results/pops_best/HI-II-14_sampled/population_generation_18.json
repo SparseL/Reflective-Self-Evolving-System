@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    avg_degree = pre.get('avg_degree', 1)\n    \n    # Precompute normalized eigenvector centrality for unvisited nodes\n    eig_vals = [graph.nodes[n]['eigenvector'] for n in unvisited_nodes]\n    min_e, max_e = min(eig_vals), max(eig_vals)\n    if max_e - min_e < 1e-12:\n        eig_norm = [0.5] * len(eig_vals)\n    else:\n        eig_norm = [(v - min_e) / (max_e - min_e) for v in eig_vals]\n\n    next_node = None\n    max_score = float('-inf')\n\n    for idx, node in enumerate(unvisited_nodes):\n        neighbors = list(graph.neighbors(node))\n        if not neighbors:\n            # If no neighbors, harmonic centrality = 0\n            harmonic_centrality = 0\n        else:\n            # Harmonic centrality approximation: sum of inverse distances to neighbors (distance=1)\n            # Since all neighbors at dist=1, sum of 1/1 = degree\n            harmonic_centrality = len(neighbors)\n\n        clust = graph.nodes[node]['clustering']\n        eig_c = eig_norm[idx]\n\n        # Inverse weighted sum: less clustering and lower eigenvector norm favored\n        inv_weighted = 1 / (1 + clust + eig_c)\n\n        # Final score combines harmonic centrality of neighbors and inverse weighted sum\n        score = harmonic_centrality * inv_weighted\n\n        if score > max_score:\n            max_score = score\n            next_node = node\n\n    return next_node",
+     "objective": 0.0595,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "fadd5cbb4b3dc4b898b4e9c36618cb81",
+               "8e21a8c0b66fbdd2648c9b0eefcdda36",
+               "505234229f687eeaf40db458238b974b",
+               "caaca4145e519a46d31fc10cce60b962",
+               "46275774c78011dbba2bd076d3da1ec9"
+          ],
+          "anc_prefix_k": 0.3936768848875551,
+          "fht_50": 137.0,
+          "fht_10": 421.0,
+          "lcc_at_k_frac": 0.21733333333333332,
+          "k": 450,
+          "detailed_results": [
+               {
+                    "instance": "HI-II-14_sampled",
+                    "objective": 0.05950196984179912,
+                    "metrics": {
+                         "time_select": 5.809225797653198,
+                         "time_anc": 5.003785133361816,
+                         "anc_prefix_k": 0.3936768848875551,
+                         "fht_50": 137.0,
+                         "fht_10": 421.0,
+                         "lcc_at_k_frac": 0.21733333333333332,
+                         "k": 450
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 11.308863401412964,
+     "time_select": 5.809225797653198,
+     "time_anc": 5.003785133361816,
+     "unique_id": "82264a9699907630fdf77dc18df86526"
+}

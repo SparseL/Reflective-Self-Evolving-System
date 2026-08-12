@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\n_removed_centralities = []\n\ndef select_next_node(graph, unvisited_nodes):\n    global _removed_centralities\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    max_core_k = pre.get('max_core_k', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n\n    n = len(unvisited_nodes)\n    unvisited_set = set(unvisited_nodes)\n\n    # Fetch node features\n    deg = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    clust = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-8:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n\n    deg_norm = normalize(deg)\n    core_norm = normalize(core)\n    betw_norm = normalize(np.log1p(betw))\n    eig_norm = normalize(eig)\n    clust_norm = normalize(clust)\n\n    # Compute local disruption potential: number of unvisited neighbors weighted by degree and core\n    expansions = np.zeros(n, dtype=float)\n    for i, node in enumerate(unvisited_nodes):\n        nbrs_unvisited = set(graph.neighbors(node)) & unvisited_set\n        expansions[i] = len(nbrs_unvisited)\n    expansions_norm = normalize(expansions)\n\n    # Novelty score: measure dissimilarity to previously removed nodes in eigenvector and betweenness space\n    if _removed_centralities:\n        prev_cent = np.array(_removed_centralities)\n        current_cent = np.vstack((eig_norm, betw_norm)).T\n        # Mean cosine distance to removed nodes\n        norm_prev = prev_cent / (np.linalg.norm(prev_cent, axis=1, keepdims=True) + 1e-10)\n        norm_curr = current_cent / (np.linalg.norm(current_cent, axis=1, keepdims=True) + 1e-10)\n        similarity = norm_curr @ norm_prev.T  # Cosine similarity matrix\n        max_sim = similarity.max(axis=1)\n        novelty = 1 - max_sim  # Higher means more novel\n    else:\n        novelty = np.ones(n)\n\n    novelty_norm = normalize(novelty)\n\n    # Combine factors: emphasize bridge_ratio on centrality, expansions on local structure, novelty to avoid redundancy\n    centrality_score = bridge_ratio * (0.6 * eig_norm + 0.4 * betw_norm) + (1 - bridge_ratio) * core_norm\n    composite_score = (0.5 * expansions_norm + 0.3 * centrality_score + 0.2 * novelty_norm) * (1 - clust_norm)\n\n    idx = np.argmax(composite_score)\n    next_node = unvisited_nodes[idx]\n\n    # Store centralities of selected node for next novelty calculation\n    _removed_centralities.append([eig_norm[idx], betw_norm[idx]])\n\n    return next_node",
+     "objective": 0.24723,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "cc4ce5d0394dc84bd700135d486bfb47",
+               "41b9cdd7e3af5a800750f898d387727e",
+               "cc4ce5d0394dc84bd700135d486bfb47",
+               "00ebef6b378f6a7f11df05fd7e277562",
+               "41b9cdd7e3af5a800750f898d387727e"
+          ],
+          "anc_prefix_k": 0.8565071738405072,
+          "fht_50": 288.6,
+          "fht_10": 372.4,
+          "lcc_at_k_frac": 0.85,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.25325624024024024,
+                    "metrics": {
+                         "time_select": 2.2949466705322266,
+                         "time_anc": 0.27651357650756836,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 379.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.24273112512512512,
+                    "metrics": {
+                         "time_select": 4.7409844398498535,
+                         "time_anc": 0.28299832344055176,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 360.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.23872343543543545,
+                    "metrics": {
+                         "time_select": 7.159641981124878,
+                         "time_anc": 0.2945592403411865,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 275.0,
+                         "fht_10": 350.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2497077957957958,
+                    "metrics": {
+                         "time_select": 9.680150270462036,
+                         "time_anc": 0.29058194160461426,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 290.0,
+                         "fht_10": 389.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.25171841241241244,
+                    "metrics": {
+                         "time_select": 11.636541366577148,
+                         "time_anc": 0.2936995029449463,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 292.0,
+                         "fht_10": 384.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 37.68923568725586,
+     "time_select": 35.51226472854614,
+     "time_anc": 1.4383525848388672,
+     "unique_id": "61258930e12364aacc6d243644f7beb9"
+}

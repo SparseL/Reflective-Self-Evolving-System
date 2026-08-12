@@ -1,0 +1,36 @@
+{
+     "algorithm": "Select the next node by dynamically adjusting weights based on the node's eigenvector centrality and core number to prioritize nodes that are both influential and deeply embedded within the network structure, while incorporating a non-linear transformation of degree and clustering metrics to enhance contrast.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n    \n    # Extract precomputed global features for normalization\n    max_core = graph.graph['precomputed']['max_core_k']\n    \n    # Prepare arrays for normalization\n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_numbers = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    \n    # Normalize features robustly\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    deg_n = norm(degrees)\n    bet_n = norm(betweenness)\n    clus_n = norm(clustering)\n    core_n = norm(core_numbers)\n    eig_n = norm(eigenvector)\n    \n    # Non-linear transformations for enhanced contrast\n    deg_score = deg_n ** 1.5                        # emphasize higher degrees more\n    clus_score = (1 - clus_n) ** 1.2                # emphasize low clustering nodes\n    \n    # Dynamic weights influenced by eigenvector and core embeddings\n    w_deg = 0.25 + 0.25 * eig_n                     # degree weight increases with eigenvector centrality\n    w_bet = 0.30\n    w_clus = 0.20 - 0.10 * core_n                   # clustering weight decreases with core number\n    w_core = 0.25 - 0.15 * eig_n                     # core weight decreases with eigenvector centrality\n    \n    # Normalize weights so they sum to 1\n    weights = np.array([w_deg, w_bet, w_clus, w_core])\n    weights = np.clip(weights, 0, None)\n    weights = weights / weights.sum(axis=0)\n    \n    scores = weights[0]*deg_score + weights[1]*bet_n + weights[2]*clus_score + weights[3]*core_n\n    \n    max_idx = np.argmax(scores)\n    next_node = unvisited_nodes[max_idx]\n    return next_node",
+     "objective": 0.09132,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "9e099042a5080e733319a770ec27fac1"
+          ],
+          "anc_prefix_k": 0.5922145319288162,
+          "fht_50": 73.0,
+          "fht_10": 133.0,
+          "lcc_at_k_frac": 0.3835946924004825,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.09132479716363871,
+                    "metrics": {
+                         "time_select": 0.7896463871002197,
+                         "time_anc": 0.3327677249908447,
+                         "anc_prefix_k": 0.5922145319288162,
+                         "fht_50": 73.0,
+                         "fht_10": 133.0,
+                         "lcc_at_k_frac": 0.3835946924004825,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.6395235061645508,
+     "time_select": 0.7896463871002197,
+     "time_anc": 0.3327677249908447,
+     "unique_id": "ced75db1c99bf9e779e459c593234ff5"
+}

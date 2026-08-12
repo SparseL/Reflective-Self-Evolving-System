@@ -1,0 +1,92 @@
+{
+     "algorithm": "node: 1.0 / n for node in unvisited_nodes",
+     "code": "import numpy as np\nimport networkx as nx\nfrom collections import deque\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    \n    unvisited_set = set(unvisited_nodes)\n    n = len(unvisited_nodes)\n    node_idx = {node: i for i, node in enumerate(unvisited_nodes)}\n\n    # Precompute normalized features\n    deg = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clust = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betw = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    eig = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-12:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n\n    deg_n = norm(deg)\n    clust_n = norm(clust)\n    core_n = norm(core)\n    betw_n = norm(np.log1p(betw))\n    eig_n = norm(eig)\n\n    # Diffusion-based Residual Influence (DRI) by Personalized PageRank on unvisited subgraph\n    # Build subgraph for unvisited nodes\n    subgraph = graph.subgraph(unvisited_nodes)\n    \n    # Personalize vector: uniform over unvisited nodes\n    personalization = {node: 1.0 / n for node in unvisited_nodes}\n    \n    # Compute PageRank with damping factor 0.85; reflects influence spread potential\n    pr_scores = nx.pagerank(subgraph, alpha=0.85, personalization=personalization, max_iter=50)\n    pr_arr = np.array([pr_scores[node] for node in unvisited_nodes])\n    pr_n = norm(pr_arr)\n\n    # Neighborhood density: ratio of edges among neighbors within unvisited nodes normalized by max possible edges\n    density = np.zeros(n, dtype=float)\n    neighbors_lists = [list(graph.neighbors(node)) for node in unvisited_nodes]\n    for i, nbrs in enumerate(neighbors_lists):\n        nbrs_unv = [nbr for nbr in nbrs if nbr in unvisited_set]\n        k = len(nbrs_unv)\n        if k < 2:\n            density[i] = 0.0\n            continue\n        edges_among = 0\n        for u in nbrs_unv:\n            u_nbrs = set(graph.neighbors(u))\n            edges_among += len(set(nbrs_unv) & u_nbrs)\n        edges_among /= 2.0\n        max_edges = k * (k - 1) / 2\n        density[i] = edges_among / max_edges if max_edges > 0 else 0\n    density_n = norm(density)\n\n    # Composite score favors high diffusion influence and core number, penalizes clustering and density\n    score = (0.5 * pr_n + 0.3 * core_n + 0.2 * betw_n) * (1 - clust_n) * (1 - density_n)\n\n    idx = np.argmax(score)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.2121,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "05fd4b2db8ed89ca404a8bca32756810",
+               "39373c1d03d28c1dde72e5f6ecbad8aa",
+               "05fd4b2db8ed89ca404a8bca32756810",
+               "378e1da64143752c72b76dec893d6600",
+               "378e1da64143752c72b76dec893d6600"
+          ],
+          "anc_prefix_k": 0.8564439132465799,
+          "fht_50": 255.6,
+          "fht_10": 298.0,
+          "lcc_at_k_frac": 0.85,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.21212337137137138,
+                    "metrics": {
+                         "time_select": 13.437837839126587,
+                         "time_anc": 0.2560410499572754,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 253.0,
+                         "fht_10": 293.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.20244797997998,
+                    "metrics": {
+                         "time_select": 12.921778917312622,
+                         "time_anc": 0.24646687507629395,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 255.0,
+                         "fht_10": 275.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.21283957757757757,
+                    "metrics": {
+                         "time_select": 13.12321162223816,
+                         "time_anc": 0.253629207611084,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 257.0,
+                         "fht_10": 301.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.21956077677677677,
+                    "metrics": {
+                         "time_select": 13.102528095245361,
+                         "time_anc": 0.2591431140899658,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 247.0,
+                         "fht_10": 328.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2135396976976977,
+                    "metrics": {
+                         "time_select": 12.991811275482178,
+                         "time_anc": 0.24533414840698242,
+                         "anc_prefix_k": 0.8561908708708709,
+                         "fht_50": 266.0,
+                         "fht_10": 293.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 67.44974684715271,
+     "time_select": 65.57716774940491,
+     "time_anc": 1.2606143951416016,
+     "unique_id": "07a24a7c11e00c8cd5a568fa8008f68e"
+}

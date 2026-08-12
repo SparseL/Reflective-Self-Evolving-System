@@ -1,0 +1,40 @@
+{
+     "algorithm": "Select the next node by ranking unvisited nodes using a weighted sum of normalized eigenvector centrality and degree, multiplied by a harmonic mean of betweenness and core number, scaled by the inverse of clustering coefficient plus a small constant, then modulated by a tanh-transformed adaptive bias derived from bridge ratio and average path length to prioritize nodes bridging communities while maintaining connectivity.",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n\n    # Extract node attributes\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes], dtype=float)\n    \n    # Normalize helper\n    def normalize(arr):\n        min_v, max_v = arr.min(), arr.max()\n        if max_v - min_v < 1e-9:\n            return np.ones_like(arr)\n        return (arr - min_v) / (max_v - min_v)\n    \n    # Normalizations\n    norm_eigen = normalize(eigenvector)\n    norm_degree = normalize(degree)\n    norm_betw = normalize(betweenness)\n    norm_core = normalize(core_number)\n    \n    # Harmonic mean of betweenness and core number\n    harm_bc = 2 * norm_betw * norm_core / (norm_betw + norm_core + 1e-9)\n    \n    # Inverse clustering scaled with small offset to avoid div0\n    inv_clust = 1 / (clustering + 0.05)\n    \n    # Adaptive bias from graph-level features\n    br = graph.graph['precomputed']['bridge_ratio_high_bc']\n    apl = graph.graph['precomputed']['apl_lcc']\n    bias = np.tanh(br * apl)\n    \n    # Score: weighted sum (0.6 eigenvector + 0.4 degree) * harmonic mean betw-core * inv clustering * bias factor\n    weighted_ev_deg = 0.6 * norm_eigen + 0.4 * norm_degree\n    score = weighted_ev_deg * harm_bc * inv_clust * (1 + bias)\n    \n    # Select node with max score\n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    \n    return next_node",
+     "objective": 0.09237,
+     "other_inf": {
+          "operator": "cu",
+          "parent": [
+               "6d217510cc000f9d39fd5e03a37b1f29",
+               "68640851121a455e7f0226c23be88318",
+               "ef17d39fa23052e581d3cc75c5cbff6b",
+               "3986d262479aa8541a8308cd2e291050",
+               "3986d262479aa8541a8308cd2e291050"
+          ],
+          "anc_prefix_k": 0.4593150342421109,
+          "fht_50": 162.0,
+          "fht_10": 726.0,
+          "lcc_at_k_frac": 0.5369595536959554,
+          "k": 430,
+          "detailed_results": [
+               {
+                    "instance": "Youtube_sampled",
+                    "objective": 0.0923689139536364,
+                    "metrics": {
+                         "time_select": 6.175795316696167,
+                         "time_anc": 4.80995774269104,
+                         "anc_prefix_k": 0.4593150342421109,
+                         "fht_50": 162.0,
+                         "fht_10": 726.0,
+                         "lcc_at_k_frac": 0.5369595536959554,
+                         "k": 430
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 11.50393795967102,
+     "time_select": 6.175795316696167,
+     "time_anc": 4.80995774269104,
+     "unique_id": "9ce2b253798b344c632f1020ffa5edbd"
+}

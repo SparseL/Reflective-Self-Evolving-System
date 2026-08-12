@@ -1,0 +1,40 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import networkx as nx\n    \n    pre = graph.graph.get('precomputed', {})\n    degree_var = pre.get('degree_variance', 1)\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n    removed_nodes = pre.get('removed_nodes', set())\n    \n    # To avoid repeated shortest path computations, use neighbors and clustering info:\n    # Heuristic: node score = (degree / (1 + clustering)) * (1 + novelty_bonus)\n    # novelty_bonus: average shortest path length in feature space (degree, core, betweenness, eigenvector)\n    # to removed nodes (if none removed yet, novelty = 1)\n    \n    # Prepare feature vectors for nodes\n    def node_feat(n):\n        return [\n            graph.nodes[n]['degree'],\n            graph.nodes[n]['core_number'],\n            graph.nodes[n]['betweenness'],\n            graph.nodes[n]['eigenvector']\n        ]\n    \n    removed_feats = [node_feat(n) for n in removed_nodes] if removed_nodes else []\n    \n    def euclidean(a,b):\n        return sum((x-y)**2 for x,y in zip(a,b))**0.5\n    \n    novelty_scores = []\n    for n in unvisited_nodes:\n        f = node_feat(n)\n        if removed_feats:\n            dist = sum(euclidean(f, rf) for rf in removed_feats)/len(removed_feats)\n            novelty = dist\n        else:\n            novelty = 1.0\n        novelty_scores.append(novelty)\n    \n    # Normalize novelty\n    min_nov, max_nov = min(novelty_scores), max(novelty_scores)\n    if max_nov - min_nov < 1e-12:\n        novelty_norm = [1.0]*len(novelty_scores)\n    else:\n        novelty_norm = [(v - min_nov)/(max_nov - min_nov) for v in novelty_scores]\n    \n    best_score = float('-inf')\n    next_node = None\n    \n    for i, n in enumerate(unvisited_nodes):\n        deg = graph.nodes[n]['degree']\n        clust = graph.nodes[n]['clustering']\n        \n        # Local fragmentation heuristic: higher degree & low clustering favored\n        frag_score = deg / (1 + clust*2)\n        \n        # Combine with novelty weighted by bridge_ratio (emphasize novelty if bridge_ratio high)\n        score = frag_score * (1 + bridge_ratio * novelty_norm[i])\n        \n        if score > best_score:\n            best_score = score\n            next_node = n\n    \n    return next_node",
+     "objective": 0.06299,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "caaca4145e519a46d31fc10cce60b962",
+               "9e085db9753677f56c5d00fc81e5661c",
+               "fadd5cbb4b3dc4b898b4e9c36618cb81",
+               "fadd5cbb4b3dc4b898b4e9c36618cb81",
+               "7c8d4146b657b48f81b1f747b5f9e14b"
+          ],
+          "anc_prefix_k": 0.41121004235979897,
+          "fht_50": 150.0,
+          "fht_10": 438.0,
+          "lcc_at_k_frac": 0.305,
+          "k": 450,
+          "detailed_results": [
+               {
+                    "instance": "HI-II-14_sampled",
+                    "objective": 0.06298872046237634,
+                    "metrics": {
+                         "time_select": 8.299989700317383,
+                         "time_anc": 4.922742605209351,
+                         "anc_prefix_k": 0.41121004235979897,
+                         "fht_50": 150.0,
+                         "fht_10": 438.0,
+                         "lcc_at_k_frac": 0.305,
+                         "k": 450
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 13.747530937194824,
+     "time_select": 8.299989700317383,
+     "time_anc": 4.922742605209351,
+     "unique_id": "8e21a8c0b66fbdd2648c9b0eefcdda36"
+}

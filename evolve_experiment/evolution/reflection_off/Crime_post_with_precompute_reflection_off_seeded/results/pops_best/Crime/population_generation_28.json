@@ -1,0 +1,36 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 0)\n    degree_variance = pre.get('degree_variance', 1)\n    bridge_ratio_high_bc = pre.get('bridge_ratio_high_bc', 0.1)  # fallback default\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    \n    unvisited_set = set(unvisited_nodes)\n    \n    # Residual degree (nbrs inside unvisited)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree, dtype=float)\n    \n    # Normalize helper\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    res_deg_norm = residual_degree / (avg_degree + 1e-10)\n    res_deg_weighted = res_deg_norm * np.sqrt(degree_variance + 1e-10)\n    \n    betw_norm = normalize(betweenness)\n    core_norm = normalize(core_number)\n    clustering_norm = normalize(clustering)\n    \n    # Calculate neighbor penalty: fraction of neighbors with high betweenness (above median)\n    betw_median = np.median(betweenness)\n    nbr_high_bc_frac = []\n    for n in nodes:\n        nbrs = list(graph.neighbors(n))\n        if not nbrs:\n            nbr_high_bc_frac.append(0)\n            continue\n        high_bc_count = sum(graph.nodes[nb]['betweenness'] > betw_median for nb in nbrs)\n        nbr_high_bc_frac.append(high_bc_count / len(nbrs))\n    nbr_high_bc_frac = np.array(nbr_high_bc_frac)\n    nbr_high_bc_norm = normalize(nbr_high_bc_frac)\n    \n    # Score calculation:\n    # - positive weight on residual degree and core number\n    # - positive weight on betweenness\n    # - negative weight on clustering and neighbor high betweenness fraction scaled by bridge_ratio_high_bc\n    score = (\n        0.7 * res_deg_weighted +\n        0.45 * core_norm +\n        0.35 * betw_norm -\n        0.6 * clustering_norm -\n        0.5 * nbr_high_bc_norm * bridge_ratio_high_bc\n    )\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+     "objective": 0.08477,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "e6c0f17252e1e55b92e1d4b0d25e6232"
+          ],
+          "anc_prefix_k": 0.562660053879049,
+          "fht_50": 75.0,
+          "fht_10": 113.0,
+          "lcc_at_k_frac": 0.13148371531966224,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.08477317835334955,
+                    "metrics": {
+                         "time_select": 1.7261252403259277,
+                         "time_anc": 0.35821962356567383,
+                         "anc_prefix_k": 0.562660053879049,
+                         "fht_50": 75.0,
+                         "fht_10": 113.0,
+                         "lcc_at_k_frac": 0.13148371531966224,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 2.604208469390869,
+     "time_select": 1.7261252403259277,
+     "time_anc": 0.35821962356567383,
+     "unique_id": "1d947921b39d0cc6ffc14837b64ba82e"
+}

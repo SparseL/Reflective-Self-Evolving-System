@@ -1,0 +1,21 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    pre = graph.graph.get('precomputed', {})\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.5)\n\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-9:\n            return np.zeros_like(arr)\n        return (arr - mn) / (mx - mn)\n\n    norm_clust = normalize(clustering)\n    norm_betw = normalize(betweenness)\n    norm_core = normalize(core_number)\n    norm_eig = normalize(eigenvector)\n    norm_deg = normalize(degree)\n\n    neigh_inv_deg_var = []\n    for n in unvisited_nodes:\n        nbrs = [nbr for nbr in graph.neighbors(n) if nbr in unvisited_nodes]\n        if nbrs:\n            nbr_degrees = np.array([graph.nodes[nbr]['degree'] for nbr in nbrs], dtype=float)\n            inv_deg = 1.0 / (nbr_degrees + 1e-9)\n            var = np.var(inv_deg)\n        else:\n            var = 0.0\n        neigh_inv_deg_var.append(var)\n    neigh_inv_deg_var = np.array(neigh_inv_deg_var)\n    norm_neigh_inv_deg_var = normalize(neigh_inv_deg_var)\n\n    eig_exp = 0.6 - 0.3 * bridge_ratio   # penalize eigenvector more\n    betw_exp = 1.1 + 0.3 * bridge_ratio  # emphasize betweenness more\n    core_exp = 0.5                      # less emphasis on core number\n    deg_exp = 1.2                      # slight more emphasis on degree\n    clust_exp = 1.0                    # stronger penalty on clustering\n\n    score = (norm_core ** core_exp * norm_deg ** deg_exp * (1 - norm_clust) ** clust_exp *\n             (norm_betw ** betw_exp) * (norm_eig ** eig_exp) * norm_neigh_inv_deg_var)\n\n    if len(score) == 0:\n        return None\n\n    idx = np.argmax(score)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.08468,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "e1a20102403412022bae9f98b083578f"
+          ],
+          "anc_prefix_k": 0.4331110813876163,
+          "fht_50": 133.0,
+          "fht_10": 696.0,
+          "lcc_at_k_frac": 0.49616457461645747,
+          "k": 430
+     },
+     "problem": null,
+     "time": 235.90574860572815,
+     "time_select": 228.17139291763306,
+     "time_anc": 7.0851640701293945,
+     "unique_id": "8c7fda1a4ebba401d47461cb8e44c4fd"
+}

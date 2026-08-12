@@ -1,0 +1,19 @@
+{
+     "algorithm": "Select the next node by scoring unvisited nodes with a combined metric that normalizes and weights degree, betweenness, and eigenvector centrality inversely, prioritizing nodes that balance immediate network disruption and long-term fragmentation.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    # Precomputed graph-level features may guide weighting (not used explicitly here but can be integrated)\n    # Extract max values for normalization\n    max_degree = max(graph.nodes[n]['degree'] for n in unvisited_nodes) or 1\n    max_betweenness = max(graph.nodes[n]['betweenness'] for n in unvisited_nodes) or 1\n    max_eigenvector = max(graph.nodes[n]['eigenvector'] for n in unvisited_nodes) or 1\n\n    # Weights tuned to balance fast disruption and long-term effect\n    w_degree = 0.4\n    w_betweenness = 0.4\n    w_eigenvector = 0.2\n\n    best_score = float('-inf')\n    next_node = None\n\n    for node in unvisited_nodes:\n        deg_norm = graph.nodes[node]['degree'] / max_degree\n        bc_norm = graph.nodes[node]['betweenness'] / max_betweenness\n        eig_norm = graph.nodes[node]['eigenvector'] / max_eigenvector\n\n        # Score combines normalized metrics:\n        # Degree and betweenness weighted positively for immediate impact,\n        # eigenvector weighted inversely to avoid only targeting hubs that don't fragment network well\n        score = w_degree * deg_norm + w_betweenness * bc_norm - w_eigenvector * eig_norm\n\n        if score > best_score:\n            best_score = score\n            next_node = node\n\n    return next_node",
+     "objective": 0.09651,
+     "other_inf": {
+          "operator": "i1",
+          "parent": [],
+          "anc_prefix_k": 0.6155467759135724,
+          "fht_50": 81.0,
+          "fht_10": 145.0,
+          "lcc_at_k_frac": 0.44752714113389624,
+          "k": 124
+     },
+     "problem": null,
+     "time": 2.5746071338653564,
+     "time_select": 1.5188663005828857,
+     "time_anc": 0.5577635765075684,
+     "unique_id": "b0097c6b8751fb2255f5919ef177dcda"
+}

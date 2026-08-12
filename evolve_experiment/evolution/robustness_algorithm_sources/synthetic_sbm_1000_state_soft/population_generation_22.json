@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    # {Leverage a node's unique contribution to the global variance of core numbers weighted by neighbor eigenvector centralities to select nodes that maximally disrupt core cohesion and global influence in each step.}\n    import numpy as np\n\n    pre = graph.graph['precomputed']\n    max_core = pre.get('max_core_k', 1)\n    degree_var = pre.get('degree_variance', 1.0)\n\n    # Extract core numbers and eigenvector centralities of unvisited nodes\n    cores = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes])\n    eigvecs = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes])\n\n    if len(cores) == 0:\n        return None\n\n    mean_core = np.mean(cores)\n\n    # For each candidate node, measure how removing it would change global core variance weighted by neighbors' global influence\n    scores = {}\n\n    for i, n in enumerate(unvisited_nodes):\n        c = cores[i]\n        nbrs = [nb for nb in graph.neighbors(n) if nb in unvisited_nodes and nb != n]\n\n        if not nbrs:\n            # No neighbors, minimal contribution to cohesion\n            scores[n] = 0\n            continue\n\n        nbr_eigvecs = np.array([graph.nodes[nb]['eigenvector'] for nb in nbrs])\n        nbr_cores = np.array([graph.nodes[nb]['core_number'] for nb in nbrs])\n\n        # Weight neighbors by eigvec centrality normalized by max eigvec in unvisited to scale\n        max_eig = eigvecs.max() if eigvecs.size > 0 else 1.0\n        weights = nbr_eigvecs / max_eig if max_eig > 0 else np.ones_like(nbr_eigvecs)\n\n        # Contribution to core variance from neighbors weighted by their influence\n        weighted_core_var = np.average((nbr_cores - mean_core) ** 2, weights=weights)\n\n        # Node's own deviation from mean core weighted by its influence (eigvec)\n        node_contrib = (c - mean_core) ** 2 * eigvecs[i]\n\n        # Final score balances node's direct deviation and its neighbors' variance contribution scaled by degree variance to adapt to graph heterogeneity\n        score = node_contrib + weighted_core_var * degree_var\n\n        scores[n] = score\n\n    # Select node with highest score (max disruption to core cohesion and influence)\n    next_node = max(scores, key=scores.get)\n\n    return next_node",
+     "objective": 0.29654,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "0c7cff96a2b109cc4973435e6fed77e9",
+               "215289cbc0d7bab2f005fecc0607d3b3",
+               "77ef3fbfea0fa15a5e581c17bb5633ce",
+               "826162640de6756ba9c1d9d9a5b84fc1",
+               "774f946f3adf71a5232d6fb7f7783093"
+          ],
+          "anc_prefix_k": 0.844387942609276,
+          "fht_50": 262.6,
+          "fht_10": 613.6,
+          "lcc_at_k_frac": 0.8348000000000001,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.29619253653653654,
+                    "metrics": {
+                         "time_select": 31.947126150131226,
+                         "time_anc": 0.6073298454284668,
+                         "anc_prefix_k": 0.842337991324658,
+                         "fht_50": 260.0,
+                         "fht_10": 622.0,
+                         "lcc_at_k_frac": 0.835,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2971801861861862,
+                    "metrics": {
+                         "time_select": 35.88600730895996,
+                         "time_anc": 0.625927209854126,
+                         "anc_prefix_k": 0.8445193059726394,
+                         "fht_50": 263.0,
+                         "fht_10": 593.0,
+                         "lcc_at_k_frac": 0.836,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.3015038038038038,
+                    "metrics": {
+                         "time_select": 35.21584939956665,
+                         "time_anc": 0.6943690776824951,
+                         "anc_prefix_k": 0.8487640974307641,
+                         "fht_50": 268.0,
+                         "fht_10": 630.0,
+                         "lcc_at_k_frac": 0.837,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.29502133133133135,
+                    "metrics": {
+                         "time_select": 48.42831516265869,
+                         "time_anc": 0.8702902793884277,
+                         "anc_prefix_k": 0.8426156423089757,
+                         "fht_50": 263.0,
+                         "fht_10": 616.0,
+                         "lcc_at_k_frac": 0.834,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.29279187587587585,
+                    "metrics": {
+                         "time_select": 46.6011118888855,
+                         "time_anc": 0.7298190593719482,
+                         "anc_prefix_k": 0.8437026760093427,
+                         "fht_50": 259.0,
+                         "fht_10": 607.0,
+                         "lcc_at_k_frac": 0.832,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 201.96297597885132,
+     "time_select": 198.07840991020203,
+     "time_anc": 3.527735471725464,
+     "unique_id": "cb44c222e86416836cd9294254c54f50"
+}

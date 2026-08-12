@@ -1,0 +1,36 @@
+{
+     "algorithm": "This new algorithm selects the next node by prioritizing nodes with high betweenness centrality normalized by their core number and degree variance of the graph, while penalizing high clustering coefficient to focus on bridging nodes that connect different parts of the network quickly.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    degree_variance = graph.graph['precomputed']['degree_variance']\n    max_core_k = graph.graph['precomputed']['max_core_k']\n\n    next_node = None\n    max_score = float('-inf')\n\n    for node in unvisited_nodes:\n        betw = graph.nodes[node]['betweenness']\n        core = graph.nodes[node]['core_number']\n        deg = graph.nodes[node]['degree']\n        clust = graph.nodes[node]['clustering']\n\n        # Score prioritizes nodes with high betweenness normalized by core number and degree variance,\n        # while penalizing nodes with high clustering to select effective network bridges.\n        score = (betw / (core + 1)) * (deg / (degree_variance + 1)) - (clust * 0.5)\n\n        if score > max_score:\n            max_score = score\n            next_node = node\n\n    return next_node",
+     "objective": 0.06364,
+     "other_inf": {
+          "operator": "m2",
+          "parent": [
+               "ffba52744a613905699e0890ebf75d09"
+          ],
+          "anc_prefix_k": 0.4065441729959369,
+          "fht_50": 144.0,
+          "fht_10": 444.0,
+          "lcc_at_k_frac": 0.308,
+          "k": 450,
+          "detailed_results": [
+               {
+                    "instance": "HI-II-14_sampled",
+                    "objective": 0.06364384120632803,
+                    "metrics": {
+                         "time_select": 5.208674907684326,
+                         "time_anc": 4.932077407836914,
+                         "anc_prefix_k": 0.4065441729959369,
+                         "fht_50": 144.0,
+                         "fht_10": 444.0,
+                         "lcc_at_k_frac": 0.308,
+                         "k": 450
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 10.64218807220459,
+     "time_select": 5.208674907684326,
+     "time_anc": 4.932077407836914,
+     "unique_id": "fadd5cbb4b3dc4b898b4e9c36618cb81"
+}

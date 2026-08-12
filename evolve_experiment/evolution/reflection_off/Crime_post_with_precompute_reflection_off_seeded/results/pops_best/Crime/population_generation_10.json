@@ -1,0 +1,40 @@
+{
+     "algorithm": "Select the next node by computing a priority score as the weighted sum of normalized harmonic mean of closeness and betweenness centrality raised to a power, multiplied by an inverse exponential decay of local clustering coefficient squared, plus an adaptive bonus proportional to the product of (1 - local clustering coefficient) and normalized residual degree squared, then penalize nodes by the product of logarithm of eigenvector centrality and a clipped modularity participation coefficient raised to a fractional power to avoid overly central clustered nodes.",
+     "code": "import networkx as nx\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    # Extract node attributes in arrays/dicts for efficiency\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    closeness = np.array([graph.nodes[n]['closeness'] if 'closeness' in graph.nodes[n] else 0 for n in nodes])  # fallback to 0 if missing\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes])\n    \n    # Normalize betweenness and closeness\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    bet_norm = normalize(betweenness)\n    clo_norm = normalize(closeness)\n    \n    # Harmonic mean with power 1.5\n    with np.errstate(divide='ignore', invalid='ignore'):\n        hmean = 2 / (1/(bet_norm**1.5 + 1e-10) + 1/(clo_norm**1.5 + 1e-10))\n    \n    # Inverse exponential decay with clustering squared\n    exp_decay = np.exp(- (clustering**2))\n    \n    # Residual degree after subtracting neighbors already removed\n    residual_degrees = []\n    unvisited_set = set(unvisited_nodes)\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        res_deg = graph.nodes[n]['degree'] - (graph.nodes[n]['degree'] - nbrs_remaining)\n        residual_degrees.append(res_deg)\n    residual_degrees = np.array(residual_degrees)\n    res_deg_norm = normalize(residual_degrees**2)\n    \n    # Adaptive bonus\n    adaptive_bonus = (1 - clustering) * res_deg_norm\n    \n    # Modularity participation coefficient clipped between 0 and 1\n    mod_part_coeff = np.array([graph.nodes[n].get('mod_participation', 0) for n in nodes])\n    mod_part_coeff = np.clip(mod_part_coeff, 0, 1) ** 0.6  # fractional power\n    \n    # Penalization term\n    with np.errstate(divide='ignore'):\n        log_eigen = np.log(eigenvector + 1e-10)\n    penalization = log_eigen * mod_part_coeff\n    \n    # Final score\n    score = hmean * exp_decay + adaptive_bonus - penalization\n    \n    # Select node with max score\n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+     "objective": 0.08771,
+     "other_inf": {
+          "operator": "cu",
+          "parent": [
+               "2eea7006b5ca56e4170e0ed60012ac19",
+               "fd8ceb273bf9a06a4ea300033ac4f51d",
+               "2184eb41a261731f0d13ba2b0fca62c1",
+               "6b98c2ef2591b079d5848f319376aa0e",
+               "6b98c2ef2591b079d5848f319376aa0e"
+          ],
+          "anc_prefix_k": 0.5794847089860261,
+          "fht_50": 78.0,
+          "fht_10": 118.0,
+          "lcc_at_k_frac": 0.18094089264173704,
+          "k": 124,
+          "detailed_results": [
+               {
+                    "instance": "Crime",
+                    "objective": 0.08770687907884447,
+                    "metrics": {
+                         "time_select": 1.1717486381530762,
+                         "time_anc": 0.3363940715789795,
+                         "anc_prefix_k": 0.5794847089860261,
+                         "fht_50": 78.0,
+                         "fht_10": 118.0,
+                         "lcc_at_k_frac": 0.18094089264173704,
+                         "k": 124
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 2.0345675945281982,
+     "time_select": 1.1717486381530762,
+     "time_anc": 0.3363940715789795,
+     "unique_id": "418140fbf6b1ff26593ba908bfa286d8"
+}

@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "import numpy as np\nimport networkx as nx\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    max_core_k = pre.get('max_core_k', 1)\n    \n    # To reduce complexity, prefetch node attributes arrays\n    degrees = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    clusterings = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    core_numbers = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betweennesses = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    \n    # Normalize core number and inverse clustering (to [0,1])\n    def norm(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx - mn < 1e-8:\n            return np.ones_like(arr) * 0.5\n        return (arr - mn) / (mx - mn)\n    \n    core_norm = norm(core_numbers)\n    inv_clust_norm = 1 - norm(clusterings)\n    \n    # Harmonic mean helper (with epsilon to avoid div by zero)\n    def harmonic_mean(a, b):\n        eps = 1e-8\n        return 2 * (a * b) / (a + b + eps)\n    \n    # Estimate local edge bottleneck score: approximate by counting edges from node to unvisited neighbors normalized by degree\n    # This is a fast proxy to local edge connectivity focused on unvisited region\n    edge_bottleneck_scores = []\n    unvisited_set = set(unvisited_nodes)\n    for n in unvisited_nodes:\n        neighbors = set(graph.neighbors(n))\n        unvisited_neighbors = neighbors.intersection(unvisited_set)\n        count = len(unvisited_neighbors)\n        deg = graph.nodes[n]['degree']\n        edge_bottleneck_scores.append(count / deg if deg > 0 else 0)\n    edge_bottleneck_scores = np.array(edge_bottleneck_scores)\n    \n    # Composite score integrates:\n    # - local bottleneck score (higher means node is a crucial \"bridge\" to unvisited parts)\n    # - harmonic mean(core_norm, inv_clust_norm): nodes bridging dense cores and sparse regions\n    composite = edge_bottleneck_scores * harmonic_mean(core_norm, inv_clust_norm)\n    \n    idx = np.argmax(composite)\n    next_node = unvisited_nodes[idx]\n    return next_node",
+     "objective": 0.2489,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "2bc172c737c30f568d47ce1d31ad956a",
+               "5499243f4f3f6863d03220298820e16d",
+               "d55c65e65294c89d5d91934f3bd51c4d",
+               "d3f4993df05d627f52d800061b0e4799",
+               "2fb1703e8435a52d574a365cd9e0c94e"
+          ],
+          "anc_prefix_k": 0.8565071738405072,
+          "fht_50": 292.8,
+          "fht_10": 379.8,
+          "lcc_at_k_frac": 0.85,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2509417697697698,
+                    "metrics": {
+                         "time_select": 1.4400131702423096,
+                         "time_anc": 0.2992398738861084,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 366.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.254984994994995,
+                    "metrics": {
+                         "time_select": 1.5848662853240967,
+                         "time_anc": 0.29639673233032227,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 413.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.23587429029029028,
+                    "metrics": {
+                         "time_select": 1.5077519416809082,
+                         "time_anc": 0.2818167209625244,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 345.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2527003043043043,
+                    "metrics": {
+                         "time_select": 1.5328333377838135,
+                         "time_anc": 0.3494713306427002,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 293.0,
+                         "fht_10": 387.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2499909169169169,
+                    "metrics": {
+                         "time_select": 1.8866543769836426,
+                         "time_anc": 0.2882394790649414,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 292.0,
+                         "fht_10": 388.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 10.090954065322876,
+     "time_select": 7.9521191120147705,
+     "time_anc": 1.5151641368865967,
+     "unique_id": "a3f1b1047d388c8ea059e4fa18a6a736"
+}

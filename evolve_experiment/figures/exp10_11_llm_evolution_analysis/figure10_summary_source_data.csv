@@ -1,0 +1,6 @@
+model,start_anc,final_anc,first_95_generation,first_best_generation,plateau_generations,plateau_ratio,improvement_count,mean_improvement,dominant_operator,top_tag_1,top_tag_2
+Claude Sonnet,0.257210000000,0.185790000000,12,28,3,0.100000000000,6,0.011903333333,m2,Local Cohesion,Bridge / Boundary
+DeepSeek-R1,0.257850000000,0.254900000000,27,27,4,0.133333333333,8,0.000368750000,m1,Centrality Mix,Core / Degree
+Gemini,0.263360000000,0.260240000000,23,23,8,0.266666666667,3,0.001040000000,e2,Centrality Mix,Local Cohesion
+GPT-5.1-Codex,0.277890000000,0.256450000000,16,16,13,0.464285714286,4,0.005360000000,m2,Spectral / Path,Local Cohesion
+Kimi,0.258790000000,0.255930000000,24,24,7,0.233333333333,3,0.000953333333,e2,Adaptive Weighting,Centrality Mix

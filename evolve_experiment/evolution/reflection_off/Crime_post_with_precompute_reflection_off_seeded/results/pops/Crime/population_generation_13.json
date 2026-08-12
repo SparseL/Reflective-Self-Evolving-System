@@ -1,0 +1,378 @@
+[
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    degree_variance = pre.get('degree_variance', np.var(degree))\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    deg_norm = normalize(degree)\n    eig_norm = normalize(eigenvector)\n    core_norm = normalize(core_number)\n    betw_norm = normalize(betweenness)\n    \n    # Harmonic mean to balance degree and eigenvector (avoid zero division by adding small epsilon)\n    eps = 1e-10\n    harm_mean = 2 * (deg_norm * eig_norm) / (deg_norm + eig_norm + eps)\n    \n    # Exponential decay for clustering and core number combined (higher clustering/core => lower score)\n    decay = np.exp(-2 * clustering * core_norm)\n    \n    # Residual degree normalized by avg_degree and weighted by sqrt of degree variance\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree, dtype=float)\n    res_deg_norm = residual_degree / (avg_degree + eps)\n    res_deg_weighted = res_deg_norm * np.sqrt(degree_variance + eps)\n    \n    # Penalty using logarithmic scaling on betweenness squared times bridge ratio to reduce penalty impact for very small betweenness\n    penalty = (np.log1p(betw_norm**2)) * bridge_ratio\n    \n    score = harm_mean * decay + 0.6 * res_deg_weighted - penalty\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08587,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "e252ebfe73f9429f2db8a712670787cc"
+               ],
+               "anc_prefix_k": 0.5683347704463396,
+               "fht_50": 75.0,
+               "fht_10": 117.0,
+               "lcc_at_k_frac": 0.23522316043425814,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.0858660134181986,
+                         "metrics": {
+                              "time_select": 0.8343427181243896,
+                              "time_anc": 0.3425099849700928,
+                              "anc_prefix_k": 0.5683347704463396,
+                              "fht_50": 75.0,
+                              "fht_10": 117.0,
+                              "lcc_at_k_frac": 0.23522316043425814,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.7045402526855469,
+          "time_select": 0.8343427181243896,
+          "time_anc": 0.3425099849700928,
+          "unique_id": "48f3a20a472dd23abca43f22f81738de"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    n = len(nodes)\n    \n    # Extract node attributes\n    core = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    eigen = np.array([graph.nodes[n]['eigenvector'] for n in nodes], dtype=float)\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', None)\n    if avg_degree is None:\n        degree_all = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n        avg_degree = np.mean(degree_all)\n    \n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.zeros(n, dtype=float)\n    for i, node in enumerate(nodes):\n        nbrs = set(graph.neighbors(node))\n        residual_degree[i] = len(nbrs & unvisited_set)\n    \n    def minmax_norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    core_n = minmax_norm(core)\n    clus_inv = 1 - minmax_norm(clustering)\n    eigen_n = minmax_norm(eigen)\n    \n    # To avoid zero values in geometric mean, clip min value\n    eps = 1e-6\n    core_n = np.clip(core_n, eps, 1)\n    clus_inv = np.clip(clus_inv, eps, 1)\n    eigen_n = np.clip(eigen_n, eps, 1)\n    \n    # Weighted geometric mean: weights sum to 1, here equal weights\n    geom_mean = (core_n * clus_inv * eigen_n) ** (1/3)\n    \n    # Normalize residual degree using softmax for sharper differentiation\n    # Subtract max for numerical stability\n    rd_shifted = residual_degree - np.max(residual_degree)\n    exp_rd = np.exp(rd_shifted)\n    softmax_rd = exp_rd / np.sum(exp_rd)\n    \n    # Final score: weighted geometric mean scaled by softmax residual degree\n    scores = geom_mean * softmax_rd\n    \n    idx = np.argmax(scores)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08595,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "1338066b917d530b2dab31daf63b349c"
+               ],
+               "anc_prefix_k": 0.5690281610235779,
+               "fht_50": 75.0,
+               "fht_10": 117.0,
+               "lcc_at_k_frac": 0.22798552472858866,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08595260906265913,
+                         "metrics": {
+                              "time_select": 0.5857727527618408,
+                              "time_anc": 0.33820390701293945,
+                              "anc_prefix_k": 0.5690281610235779,
+                              "fht_50": 75.0,
+                              "fht_10": 117.0,
+                              "lcc_at_k_frac": 0.22798552472858866,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.4508936405181885,
+          "time_select": 0.5857727527618408,
+          "time_anc": 0.33820390701293945,
+          "unique_id": "740d0185bb12dee288d47f8614b23813"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    degree_variance = pre.get('degree_variance', np.var(degree))\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n\n    eig_norm = normalize(eigenvector)\n    betw_norm = normalize(betweenness)\n    clustering_norm = normalize(clustering)\n    core_norm = normalize(core_number)\n    \n    # Linear penalty combining clustering and core number\n    penalty = 0.7 * clustering_norm + 0.5 * core_norm\n    \n    # Residual degree normalized and weighted by degree variance\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree, dtype=float)\n    res_deg_norm = residual_degree / (avg_degree + 1e-10)\n    res_deg_weighted = res_deg_norm * np.sqrt(degree_variance + 1e-10)\n    \n    # Score: emphasize betweenness and eigenvector multiplicatively, subtract penalty, add residual degree effect\n    score = (betw_norm * eig_norm) - penalty + 0.5 * res_deg_weighted\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08616,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "48f3a20a472dd23abca43f22f81738de"
+               ],
+               "anc_prefix_k": 0.5692787863886131,
+               "fht_50": 75.0,
+               "fht_10": 115.0,
+               "lcc_at_k_frac": 0.2677925211097708,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08616410727296074,
+                         "metrics": {
+                              "time_select": 0.8337976932525635,
+                              "time_anc": 0.338594913482666,
+                              "anc_prefix_k": 0.5692787863886131,
+                              "fht_50": 75.0,
+                              "fht_10": 115.0,
+                              "lcc_at_k_frac": 0.2677925211097708,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.687699794769287,
+          "time_select": 0.8337976932525635,
+          "time_anc": 0.338594913482666,
+          "unique_id": "fd06c95255234f68f58a2b3121f3e8ee"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes])\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    betw_norm = normalize(betweenness)\n    eig_norm = normalize(eigenvector)\n    clust_norm = normalize(clustering)\n    \n    # Harmonic mean of betweenness and eigenvector centrality to emphasize nodes high in both\n    with np.errstate(divide='ignore', invalid='ignore'):\n        harmonic_mean = 2 * betw_norm * eig_norm / (betw_norm + eig_norm)\n        harmonic_mean = np.nan_to_num(harmonic_mean)\n    \n    # Residual degree calculation\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.array([len(set(graph.neighbors(n)).intersection(unvisited_set)) for n in nodes])\n    res_deg_scaled = residual_degree / (avg_degree + 1e-10)\n    \n    # Score components\n    score_centrality = harmonic_mean * (1 - clust_norm)  # penalize high clustering\n    score_res_degree = 0.8 * res_deg_scaled              # encourage nodes with more unremoved neighbors\n    penalty = (clust_norm ** 2) * bridge_ratio           # penalty related to clustering and bridge ratio\n    \n    # Final score: balance centrality and residual degree with penalty\n    score = 0.6 * score_centrality + score_res_degree - penalty\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08625,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "6f6c37d5a680564564a4e17032b36c26"
+               ],
+               "anc_prefix_k": 0.5710437848575096,
+               "fht_50": 75.0,
+               "fht_10": 118.0,
+               "lcc_at_k_frac": 0.19059107358262967,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08624827776137459,
+                         "metrics": {
+                              "time_select": 0.7060134410858154,
+                              "time_anc": 0.343458890914917,
+                              "anc_prefix_k": 0.5710437848575096,
+                              "fht_50": 75.0,
+                              "fht_10": 118.0,
+                              "lcc_at_k_frac": 0.19059107358262967,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.5814974308013916,
+          "time_select": 0.7060134410858154,
+          "time_anc": 0.343458890914917,
+          "unique_id": "37de1f1b022a72f1f49a640747448554"
+     },
+     {
+          "algorithm": "Select the next node by computing a priority score as the weighted sum of normalized harmonic mean of closeness and betweenness centrality raised to a power, multiplied by an inverse exponential decay of local clustering coefficient squared, plus an adaptive bonus proportional to the product of (1 - local clustering coefficient) and normalized residual degree squared, then penalize nodes by the product of logarithm of eigenvector centrality and a clipped modularity participation coefficient raised to a fractional power to avoid overly central clustered nodes.",
+          "code": "import networkx as nx\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    # Extract node attributes in arrays/dicts for efficiency\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    closeness = np.array([graph.nodes[n]['closeness'] if 'closeness' in graph.nodes[n] else 0 for n in nodes])  # fallback to 0 if missing\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes])\n    \n    # Normalize betweenness and closeness\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    bet_norm = normalize(betweenness)\n    clo_norm = normalize(closeness)\n    \n    # Harmonic mean with power 1.5\n    with np.errstate(divide='ignore', invalid='ignore'):\n        hmean = 2 / (1/(bet_norm**1.5 + 1e-10) + 1/(clo_norm**1.5 + 1e-10))\n    \n    # Inverse exponential decay with clustering squared\n    exp_decay = np.exp(- (clustering**2))\n    \n    # Residual degree after subtracting neighbors already removed\n    residual_degrees = []\n    unvisited_set = set(unvisited_nodes)\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        res_deg = graph.nodes[n]['degree'] - (graph.nodes[n]['degree'] - nbrs_remaining)\n        residual_degrees.append(res_deg)\n    residual_degrees = np.array(residual_degrees)\n    res_deg_norm = normalize(residual_degrees**2)\n    \n    # Adaptive bonus\n    adaptive_bonus = (1 - clustering) * res_deg_norm\n    \n    # Modularity participation coefficient clipped between 0 and 1\n    mod_part_coeff = np.array([graph.nodes[n].get('mod_participation', 0) for n in nodes])\n    mod_part_coeff = np.clip(mod_part_coeff, 0, 1) ** 0.6  # fractional power\n    \n    # Penalization term\n    with np.errstate(divide='ignore'):\n        log_eigen = np.log(eigenvector + 1e-10)\n    penalization = log_eigen * mod_part_coeff\n    \n    # Final score\n    score = hmean * exp_decay + adaptive_bonus - penalization\n    \n    # Select node with max score\n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08771,
+          "other_inf": {
+               "operator": "cu",
+               "parent": [
+                    "2eea7006b5ca56e4170e0ed60012ac19",
+                    "fd8ceb273bf9a06a4ea300033ac4f51d",
+                    "2184eb41a261731f0d13ba2b0fca62c1",
+                    "6b98c2ef2591b079d5848f319376aa0e",
+                    "6b98c2ef2591b079d5848f319376aa0e"
+               ],
+               "anc_prefix_k": 0.5794847089860261,
+               "fht_50": 78.0,
+               "fht_10": 118.0,
+               "lcc_at_k_frac": 0.18094089264173704,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08770687907884447,
+                         "metrics": {
+                              "time_select": 1.1717486381530762,
+                              "time_anc": 0.3363940715789795,
+                              "anc_prefix_k": 0.5794847089860261,
+                              "fht_50": 78.0,
+                              "fht_10": 118.0,
+                              "lcc_at_k_frac": 0.18094089264173704,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 2.0345675945281982,
+          "time_select": 1.1717486381530762,
+          "time_anc": 0.3363940715789795,
+          "unique_id": "418140fbf6b1ff26593ba908bfa286d8"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    n = len(nodes)\n    \n    # Extract node attributes\n    betw = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', None)\n    if avg_degree is None:\n        degree_all = np.array([graph.nodes[n]['degree'] for n in nodes], dtype=float)\n        avg_degree = np.mean(degree_all)\n    \n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.zeros(n, dtype=float)\n    for i, node in enumerate(nodes):\n        nbrs = set(graph.neighbors(node))\n        residual_degree[i] = len(nbrs & unvisited_set)\n    \n    def minmax_norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    betw_n = minmax_norm(betw)\n    degree_n = minmax_norm(degree)\n    clus_inv = 1 - minmax_norm(clustering)\n    \n    # Weighted arithmetic mean (weights sum to 1)\n    w_betw, w_deg, w_clus = 0.4, 0.4, 0.2\n    score_base = w_betw * betw_n + w_deg * degree_n + w_clus * clus_inv\n    \n    # Sigmoid scaling for residual degree to moderate influence\n    def sigmoid(x):\n        return 1 / (1 + np.exp(-0.5*(x - avg_degree)))\n    \n    residual_sigmoid = sigmoid(residual_degree)\n    \n    scores = score_base * residual_sigmoid\n    \n    idx = np.argmax(scores)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08812,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "740d0185bb12dee288d47f8614b23813"
+               ],
+               "anc_prefix_k": 0.580427597043664,
+               "fht_50": 73.0,
+               "fht_10": 126.0,
+               "lcc_at_k_frac": 0.316043425814234,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08812041739086571,
+                         "metrics": {
+                              "time_select": 0.584648847579956,
+                              "time_anc": 0.34039950370788574,
+                              "anc_prefix_k": 0.580427597043664,
+                              "fht_50": 73.0,
+                              "fht_10": 126.0,
+                              "lcc_at_k_frac": 0.316043425814234,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.4352943897247314,
+          "time_select": 0.584648847579956,
+          "time_anc": 0.34039950370788574,
+          "unique_id": "67e2a6897b3dfb1a9e24e908731fca93"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    \n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes])\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in nodes])\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    bridge_ratio = pre.get('bridge_ratio_high_bc', 0.1)\n    \n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    core_norm = normalize(core_number)\n    eig_norm = normalize(eigenvector)\n    betw_norm = normalize(betweenness)\n    \n    # Weighted geometric mean of core number and eigenvector centrality\n    geom_mean = (core_norm ** 0.6) * (eig_norm ** 0.4)\n    \n    # Inverse linear decay of clustering: scale between [0.5,1] so nodes with clustering=1 get 0.5\n    decay = 1 - 0.5 * clustering\n    \n    # Residual degree normalized by avg_degree\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n))\n        nbrs_remaining = len(nbrs.intersection(unvisited_set))\n        residual_degree.append(nbrs_remaining)\n    residual_degree = np.array(residual_degree)\n    res_deg_norm = residual_degree / (avg_degree + 1e-10)\n    \n    # Penalty term: betweenness squared times bridge_ratio\n    penalty = (betw_norm ** 2) * bridge_ratio\n    \n    score = geom_mean * decay + 0.7 * res_deg_norm - penalty\n    \n    idx = np.argmax(score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08879,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "418140fbf6b1ff26593ba908bfa286d8"
+               ],
+               "anc_prefix_k": 0.583464896376539,
+               "fht_50": 74.0,
+               "fht_10": 128.0,
+               "lcc_at_k_frac": 0.3425814234016888,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08878889935361296,
+                         "metrics": {
+                              "time_select": 0.8207952976226807,
+                              "time_anc": 0.3354215621948242,
+                              "anc_prefix_k": 0.583464896376539,
+                              "fht_50": 74.0,
+                              "fht_10": 128.0,
+                              "lcc_at_k_frac": 0.3425814234016888,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.6794509887695312,
+          "time_select": 0.8207952976226807,
+          "time_anc": 0.3354215621948242,
+          "unique_id": "e252ebfe73f9429f2db8a712670787cc"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    max_core_k = pre.get('max_core_k', 1)\n    \n    # Extract node features\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes], dtype=float)\n    core_number = np.array([graph.nodes[n]['core_number'] for n in nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes], dtype=float)\n    \n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.array([\n        len(set(graph.neighbors(n)) & unvisited_set) for n in nodes\n    ], dtype=float)\n    \n    # Normalize helper\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    inv_clustering = 1 - clustering\n    inv_clust_norm = normalize(inv_clustering)\n    res_deg_norm = normalize(residual_degree)\n    core_norm = normalize(core_number)\n    \n    # Compute average betweenness of neighbors in unvisited set\n    neigh_betw_avg = []\n    for n in nodes:\n        nbrs = set(graph.neighbors(n)) & unvisited_set\n        if nbrs:\n            avg_b = np.mean([graph.nodes[nb]['betweenness'] for nb in nbrs])\n        else:\n            avg_b = 0\n        neigh_betw_avg.append(avg_b)\n    neigh_betw_avg = np.array(neigh_betw_avg)\n    neigh_betw_norm = normalize(neigh_betw_avg)\n    \n    # Novelty score: product of inverse clustering and residual degree, scaled by core number\n    novelty_score = (inv_clust_norm * res_deg_norm) * core_norm\n    \n    # Penalize nodes with high avg neighbor betweenness\n    penalty = neigh_betw_norm\n    \n    final_score = novelty_score - penalty\n    \n    idx = np.argmax(final_score)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08943,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "418140fbf6b1ff26593ba908bfa286d8",
+                    "e252ebfe73f9429f2db8a712670787cc",
+                    "fd8ceb273bf9a06a4ea300033ac4f51d",
+                    "0d38887c9ee1d27db19d86116cc5f0e5",
+                    "418140fbf6b1ff26593ba908bfa286d8"
+               ],
+               "anc_prefix_k": 0.5844519364181354,
+               "fht_50": 74.0,
+               "fht_10": 127.0,
+               "lcc_at_k_frac": 0.43546441495778043,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08943064836434436,
+                         "metrics": {
+                              "time_select": 1.7188093662261963,
+                              "time_anc": 0.3415684700012207,
+                              "anc_prefix_k": 0.5844519364181354,
+                              "fht_50": 74.0,
+                              "fht_10": 127.0,
+                              "lcc_at_k_frac": 0.43546441495778043,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 2.5746963024139404,
+          "time_select": 1.7188093662261963,
+          "time_anc": 0.3415684700012207,
+          "unique_id": "9a376f9e4c828d514d0516223960041a"
+     },
+     {
+          "algorithm": "",
+          "code": "import numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    nodes = unvisited_nodes\n    n = len(nodes)\n    \n    # Extract attributes\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n    \n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', np.mean(degree))\n    \n    # Residual degree: number of neighbors still unvisited\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.zeros(n)\n    for i, node in enumerate(nodes):\n        nbrs = set(graph.neighbors(node))\n        residual_degree[i] = len(nbrs & unvisited_set)\n    \n    # Normalize clustering and betweenness to [0,1]\n    def minmax_norm(arr):\n        mn, mx = arr.min(), arr.max()\n        return (arr - mn) / (mx - mn) if mx > mn else np.zeros_like(arr)\n    \n    clus_norm = minmax_norm(clustering)\n    betw_norm = minmax_norm(betweenness)\n    \n    # Inverse clustering to favor low clustering (avoid triangles)\n    inv_clus = 1 - clus_norm\n    # To avoid division by zero in harmonic mean, clip min value\n    inv_clus = np.clip(inv_clus, 1e-6, 1)\n    betw_norm = np.clip(betw_norm, 1e-6, 1)\n    \n    # Harmonic mean of inverse clustering and betweenness centrality\n    harm_mean = 2 / (1/inv_clus + 1/betw_norm)\n    \n    # Sigmoid weighting of residual degree relative to average degree\n    # Maps residual_degree around avg_degree to weights in (0,1)\n    diff = residual_degree - avg_degree\n    sigmoid = 1 / (1 + np.exp(-diff))\n    \n    # Final score: harmonic mean weighted by sigmoid residual degree\n    scores = harm_mean * sigmoid\n    \n    idx = np.argmax(scores)\n    next_node = nodes[idx]\n    return next_node",
+          "objective": 0.08982,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "e5f4172db39e3252a47c6ab8b08b5c66",
+                    "db89507cc7b8aa33ca49372d7edebae6",
+                    "2eea7006b5ca56e4170e0ed60012ac19",
+                    "6f6c37d5a680564564a4e17032b36c26",
+                    "ced75db1c99bf9e779e459c593234ff5"
+               ],
+               "anc_prefix_k": 0.5906908067815192,
+               "fht_50": 77.0,
+               "fht_10": 123.0,
+               "lcc_at_k_frac": 0.293124246079614,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08981899317123154,
+                         "metrics": {
+                              "time_select": 0.6103842258453369,
+                              "time_anc": 0.3511788845062256,
+                              "anc_prefix_k": 0.5906908067815192,
+                              "fht_50": 77.0,
+                              "fht_10": 123.0,
+                              "lcc_at_k_frac": 0.293124246079614,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.476924180984497,
+          "time_select": 0.6103842258453369,
+          "time_anc": 0.3511788845062256,
+          "unique_id": "1338066b917d530b2dab31daf63b349c"
+     },
+     {
+          "algorithm": "",
+          "code": "import networkx as nx\nimport numpy as np\n\ndef select_next_node(graph, unvisited_nodes):\n    pre = graph.graph.get('precomputed', {})\n    avg_degree = pre.get('avg_degree', 1)\n    \n    nodes = unvisited_nodes\n    n = len(nodes)\n    node_idx = {n:i for i,n in enumerate(nodes)}\n    \n    # Extract features\n    clustering = np.array([graph.nodes[n]['clustering'] for n in nodes])\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in nodes])\n    degree = np.array([graph.nodes[n]['degree'] for n in nodes])\n\n    # Compute residual degree = number of neighbors in unvisited nodes\n    unvisited_set = set(unvisited_nodes)\n    residual_degree = np.zeros(n)\n    for i, node in enumerate(nodes):\n        nbrs = set(graph.neighbors(node))\n        residual_degree[i] = len(nbrs & unvisited_set)\n    \n    # Normalize features to [0,1]\n    def minmax_norm(x):\n        mn, mx = x.min(), x.max()\n        return (x - mn) / (mx - mn) if mx > mn else np.zeros_like(x)\n    \n    inv_clustering = 1 - minmax_norm(clustering)            # prefer low clustering\n    bet_norm = minmax_norm(betweenness)                     # prefer high betweenness\n    resdeg_norm = minmax_norm(residual_degree)              # prefer high residual degree\n\n    # Construct objective vectors: maximize inv_clustering, bet_norm, resdeg_norm\n    objs = np.vstack([inv_clustering, bet_norm, resdeg_norm]).T  # shape (n,3)\n\n    # Pareto front identification (non-dominated sorting)\n    def is_dominated(a, b):\n        return np.all(b >= a) and np.any(b > a)\n\n    pareto_mask = np.ones(n, dtype=bool)\n    for i in range(n):\n        if not pareto_mask[i]:\n            continue\n        for j in range(i+1, n):\n            if not pareto_mask[j]:\n                continue\n            if is_dominated(objs[i], objs[j]):\n                pareto_mask[i] = False\n                break\n            if is_dominated(objs[j], objs[i]):\n                pareto_mask[j] = False\n\n    pareto_nodes = np.array(nodes)[pareto_mask]\n    \n    # Among pareto nodes, pick the one with max minimal shortest path distance to already removed nodes\n    # This encourages spreading out removals for balanced fragmentation\n    removed_nodes = set(graph.nodes()) - unvisited_set\n    if not removed_nodes:\n        # No removed nodes yet, pick highest sum of objectives on Pareto front\n        scores = objs[pareto_mask].sum(axis=1)\n        idx = np.argmax(scores)\n        next_node = pareto_nodes[idx]\n        return next_node\n\n    # Precompute shortest path lengths only for pareto_nodes candidates to removed_nodes\n    # Use multi-source shortest path from removed_nodes\n    sp_lengths = {}\n    try:\n        sp_lengths = nx.multi_source_dijkstra_path_length(graph, removed_nodes)\n    except:\n        # fallback in case graph is disconnected\n        sp_lengths = dict()\n    \n    max_min_dist = -1\n    next_node = None\n    for node in pareto_nodes:\n        dist = sp_lengths.get(node, np.inf)\n        if dist > max_min_dist:\n            max_min_dist = dist\n            next_node = node\n\n    if next_node is None:\n        # fallback: choose node with max sum objectives\n        scores = objs[pareto_mask].sum(axis=1)\n        idx = np.argmax(scores)\n        next_node = pareto_nodes[idx]\n\n    return next_node",
+          "objective": 0.08984,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "418140fbf6b1ff26593ba908bfa286d8",
+                    "fd8ceb273bf9a06a4ea300033ac4f51d",
+                    "418140fbf6b1ff26593ba908bfa286d8",
+                    "2184eb41a261731f0d13ba2b0fca62c1",
+                    "09ff2bd84592de63bc892936870a21e4"
+               ],
+               "anc_prefix_k": 0.588358881800134,
+               "fht_50": 75.0,
+               "fht_10": 126.0,
+               "lcc_at_k_frac": 0.3232810615199035,
+               "k": 124,
+               "detailed_results": [
+                    {
+                         "instance": "Crime",
+                         "objective": 0.08984488962014725,
+                         "metrics": {
+                              "time_select": 25.9991672039032,
+                              "time_anc": 0.3400144577026367,
+                              "anc_prefix_k": 0.588358881800134,
+                              "fht_50": 75.0,
+                              "fht_10": 126.0,
+                              "lcc_at_k_frac": 0.3232810615199035,
+                              "k": 124
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 26.8514244556427,
+          "time_select": 25.9991672039032,
+          "time_anc": 0.3400144577026367,
+          "unique_id": "db89507cc7b8aa33ca49372d7edebae6"
+     }
+]

@@ -1,0 +1,36 @@
+{
+     "algorithm": "Select the next node by computing a weighted sum of normalized eigenvector centrality and betweenness, amplified multiplicatively by normalized core number, then penalized exponentially by clustering coefficient to favor globally influential but locally less clustered nodes.",
+     "code": "def select_next_node(graph, unvisited_nodes):\n    import numpy as np\n\n    degree = np.array([graph.nodes[n]['degree'] for n in unvisited_nodes], dtype=float)\n    core = np.array([graph.nodes[n]['core_number'] for n in unvisited_nodes], dtype=float)\n    betweenness = np.array([graph.nodes[n]['betweenness'] for n in unvisited_nodes], dtype=float)\n    clustering = np.array([graph.nodes[n]['clustering'] for n in unvisited_nodes], dtype=float)\n    eigenvector = np.array([graph.nodes[n]['eigenvector'] for n in unvisited_nodes], dtype=float)\n\n    def normalize(arr):\n        mn, mx = arr.min(), arr.max()\n        if mx == mn:\n            return np.ones_like(arr)\n        return (arr - mn) / (mx - mn) + 1e-8\n\n    norm_eig = normalize(eigenvector)\n    norm_betw = normalize(betweenness)\n    norm_core = normalize(core)\n    norm_clust = normalize(clustering)\n\n    # Weighted sum of eigenvector and betweenness\n    combined = 0.6 * norm_eig + 0.4 * norm_betw\n\n    # Amplify multiplicatively by core number\n    amplified = combined * (1 + norm_core)\n\n    # Penalize exponentially by clustering coefficient\n    scores = amplified * np.exp(-3 * norm_clust)\n\n    idx = np.argmax(scores)\n    next_node = unvisited_nodes[idx]\n\n    return next_node",
+     "objective": 0.09193,
+     "other_inf": {
+          "operator": "m1",
+          "parent": [
+               "6d217510cc000f9d39fd5e03a37b1f29"
+          ],
+          "anc_prefix_k": 0.45781107423881784,
+          "fht_50": 162.0,
+          "fht_10": 709.0,
+          "lcc_at_k_frac": 0.5258019525801952,
+          "k": 430,
+          "detailed_results": [
+               {
+                    "instance": "Youtube_sampled",
+                    "objective": 0.09192918186092434,
+                    "metrics": {
+                         "time_select": 6.208151817321777,
+                         "time_anc": 4.5910890102386475,
+                         "anc_prefix_k": 0.45781107423881784,
+                         "fht_50": 162.0,
+                         "fht_10": 709.0,
+                         "lcc_at_k_frac": 0.5258019525801952,
+                         "k": 430
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 11.32288908958435,
+     "time_select": 6.208151817321777,
+     "time_anc": 4.5910890102386475,
+     "unique_id": "7993ff956a625158a38e8ee73ec095c1"
+}

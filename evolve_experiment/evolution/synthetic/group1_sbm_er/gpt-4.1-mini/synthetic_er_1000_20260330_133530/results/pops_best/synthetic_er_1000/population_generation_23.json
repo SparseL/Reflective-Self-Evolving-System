@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "import math\n\ndef select_next_node(graph, unvisited_nodes):\n    eps = 1e-9\n    pre = graph.graph.get('precomputed', {})\n    max_core = pre.get('max_core_k', 1)\n    \n    # Precompute node features\n    degrees = []\n    clusterings = []\n    betws = []\n    eigs = []\n    \n    # Residual degree: degree minus edges to visited nodes (approximate with neighbors in unvisited)\n    residual_degs = []\n    \n    unvisited_set = set(unvisited_nodes)\n    \n    for n in unvisited_nodes:\n        deg = graph.nodes[n]['degree']\n        cluster = graph.nodes[n]['clustering']\n        betw = graph.nodes[n]['betweenness']\n        eig = graph.nodes[n]['eigenvector']\n        \n        # Count neighbors still unvisited for residual degree\n        nbrs = list(graph.neighbors(n))\n        res_deg = sum((1 for v in nbrs if v in unvisited_set))\n        \n        degrees.append(deg)\n        clusterings.append(cluster)\n        betws.append(betw)\n        eigs.append(eig)\n        residual_degs.append(res_deg)\n    \n    def normalize(vals):\n        mn, mx = min(vals), max(vals)\n        if mx - mn < eps:\n            return [0.5]*len(vals)\n        return [(v - mn)/(mx - mn) for v in vals]\n    \n    # Normalize features\n    cluster_inv_n = normalize([1 - c for c in clusterings])     # inverse clustering ~ eccentricity proxy (lower clustering ~ more peripheral)\n    residual_deg_n = normalize(residual_degs)                   # residual degree reflects current connectivity\n    betw_n = normalize(betws)\n    eig_n = normalize(eigs)\n    \n    def harmonic_mean(a, b):\n        return 2 * a * b / (a + b + eps)\n    \n    best_score = -float('inf')\n    best_node = None\n    \n    for i, n in enumerate(unvisited_nodes):\n        # Harmonic mean of betweenness and eigenvector centrality (balancing global centrality and bridging)\n        centrality_hm = harmonic_mean(betw_n[i], eig_n[i])\n        \n        # Synergy score: product of inverse clustering, residual degree, and harmonic mean centrality\n        score = cluster_inv_n[i] * residual_deg_n[i] * centrality_hm\n        \n        if score > best_score:\n            best_score = score\n            best_node = n\n    \n    return best_node",
+     "objective": 0.27586,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "fcfdd149ddfd8e0954a5547743fd76a4",
+               "14898f130386dea154a91db9be830cf9",
+               "06b5891445b5a3d32e545e4804bfce18",
+               "82172df6973f7b4a8ba184f337159e95",
+               "06b5891445b5a3d32e545e4804bfce18"
+          ],
+          "anc_prefix_k": 0.8558971424758092,
+          "fht_50": 282.0,
+          "fht_10": 483.0,
+          "lcc_at_k_frac": 0.8488,
+          "k": 150,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2772665865865866,
+                    "metrics": {
+                         "time_select": 1.7629237174987793,
+                         "time_anc": 0.28177809715270996,
+                         "anc_prefix_k": 0.8555212545879213,
+                         "fht_50": 283.0,
+                         "fht_10": 490.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.27525484084084084,
+                    "metrics": {
+                         "time_select": 1.7264461517333984,
+                         "time_anc": 0.28942179679870605,
+                         "anc_prefix_k": 0.8552887287287287,
+                         "fht_50": 280.0,
+                         "fht_10": 478.0,
+                         "lcc_at_k_frac": 0.848,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2777007167167167,
+                    "metrics": {
+                         "time_select": 1.8608436584472656,
+                         "time_anc": 0.30067944526672363,
+                         "anc_prefix_k": 0.8565071738405071,
+                         "fht_50": 284.0,
+                         "fht_10": 486.0,
+                         "lcc_at_k_frac": 0.85,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2731303183183183,
+                    "metrics": {
+                         "time_select": 1.8182902336120605,
+                         "time_anc": 0.2690153121948242,
+                         "anc_prefix_k": 0.8558327527527527,
+                         "fht_50": 279.0,
+                         "fht_10": 477.0,
+                         "lcc_at_k_frac": 0.848,
+                         "k": 150
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2759227967967968,
+                    "metrics": {
+                         "time_select": 1.7925286293029785,
+                         "time_anc": 0.3012557029724121,
+                         "anc_prefix_k": 0.8563358024691358,
+                         "fht_50": 284.0,
+                         "fht_10": 484.0,
+                         "lcc_at_k_frac": 0.849,
+                         "k": 150
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 11.15275502204895,
+     "time_select": 8.961032390594482,
+     "time_anc": 1.442150354385376,
+     "unique_id": "4b15ae09f0f49c3093e5957219ac3a40"
+}
