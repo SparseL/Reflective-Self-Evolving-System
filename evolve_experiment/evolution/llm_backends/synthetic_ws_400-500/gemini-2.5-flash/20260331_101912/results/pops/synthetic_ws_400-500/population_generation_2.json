@@ -1,0 +1,542 @@
+[
+     {
+          "algorithm": "The algorithm selects the unvisited node with the highest 'Logarithmic Impact Score,' \n    computed as the sum of the natural logarithm of its betweenness centrality, \n    the natural logarithm of its eigenvector centrality, its core number incremented by one, \n    and the ratio of its degree to its clustering coefficient, aiming to prioritize nodes \n    that are globally influential, structurally robust, and act as efficient, \n    non-redundant connectors.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm selects the unvisited node with the highest 'Logarithmic Impact Score,' \n    computed as the sum of the natural logarithm of its betweenness centrality, \n    the natural logarithm of its eigenvector centrality, its core number incremented by one, \n    and the ratio of its degree to its clustering coefficient, aiming to prioritize nodes \n    that are globally influential, structurally robust, and act as efficient, \n    non-redundant connectors.}\n    \"\"\"\n    max_score = -float('inf')  # Initialize with negative infinity for additive scores\n    next_node = None\n    \n    epsilon = 1e-9  # Small value to handle logarithms of zero and division by zero\n    \n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0.0 if not present\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_degree = graph.nodes[node].get('degree', 0)\n        \n        # Term 1: Logarithm of Betweenness Centrality\n        # Adding epsilon to ensure argument to log is always positive.\n        # Nodes with zero betweenness will have a large negative contribution.\n        term_betweenness = math.log(node_betweenness + epsilon)\n        \n        # Term 2: Logarithm of Eigenvector Centrality\n        # Similar to betweenness, penalizes nodes with zero eigenvector centrality.\n        term_eigenvector = math.log(node_eigenvector + epsilon)\n        \n        # Term 3: Core Number\n        # Adds a linear contribution reflecting structural depth. Increment by 1 to ensure\n        # nodes in the outermost shell (core_number 0) still contribute positively.\n        term_core_number = node_core_number + 1\n        \n        # Term 4: Degree to Clustering Ratio\n        # This term highlights nodes that are highly connected (high degree) but are not\n        # part of dense cliques (low clustering), thus acting as critical bridges.\n        # Isolated nodes (degree 0) have no bridging capability, so their ratio is 0.\n        if node_degree == 0:\n            term_degree_clustering_ratio = 0.0\n        else:\n            term_degree_clustering_ratio = node_degree / (node_clustering + epsilon)\n        \n        # Combine all terms additively to form the Logarithmic Impact Score\n        current_score = term_betweenness + \\\n                        term_eigenvector + \\\n                        term_core_number + \\\n                        term_degree_clustering_ratio\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback: if no node was selected (e.g., unvisited_nodes was empty or an unforeseen\n    # error occurred where max_score remained -inf), return the first unvisited node\n    # to ensure a node is always returned if candidates exist.\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+          "objective": 0.26336,
+          "other_inf": {
+               "operator": "e2",
+               "parent": [
+                    "bf9fb38832a3f6cf603494c81e0ff603",
+                    "90680c35bd57268003313b277a25444a",
+                    "8a6f2062e78f851db333fb2ca8abfe6c",
+                    "bf9fb38832a3f6cf603494c81e0ff603",
+                    "69219c9371c33628c2a3d38a0775a023"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 124.6,
+               "fht_10": 198.8,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2714849102988568,
+                         "metrics": {
+                              "time_select": 0.19010162353515625,
+                              "time_anc": 0.045760154724121094,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 201.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2695611232576587,
+                         "metrics": {
+                              "time_select": 0.2300562858581543,
+                              "time_anc": 0.05889272689819336,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 198.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2503692685766022,
+                         "metrics": {
+                              "time_select": 0.21668601036071777,
+                              "time_anc": 0.0565340518951416,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 102.0,
+                              "fht_10": 215.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2464784758170201,
+                         "metrics": {
+                              "time_select": 0.16818666458129883,
+                              "time_anc": 0.04043936729431152,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 119.0,
+                              "fht_10": 160.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.27891089717602036,
+                         "metrics": {
+                              "time_select": 0.21616244316101074,
+                              "time_anc": 0.055692195892333984,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 138.0,
+                              "fht_10": 220.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.9726572036743164,
+          "time_select": 1.021193027496338,
+          "time_anc": 0.25731849670410156,
+          "unique_id": "67d480044503626da9caacdc9c4ab984"
+     },
+     {
+          "algorithm": "The algorithm selects the unvisited node with the highest 'Influence-Weighted Bridging Score,' computed as the sum of its normalized eigenvector centrality and normalized core number, multiplied by a bridging bonus term derived from its degree and the complement of its clustering coefficient, prioritizing nodes that are both influential and structurally robust, enhanced by their non-redundant connectivity.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm selects the unvisited node with the highest 'Influence-Weighted Bridging Score,' computed as the sum of its normalized eigenvector centrality and normalized core number, multiplied by a bridging bonus term derived from its degree and the complement of its clustering coefficient, prioritizing nodes that are both influential and structurally robust, enhanced by their non-redundant connectivity.}\n    \"\"\"\n    max_score = -float('inf')\n    next_node = None\n    \n    epsilon = 1e-9 # Small value for numerical stability\n    \n    # Retrieve graph-level max_core_k for normalization\n    # Default to 0 if not found, then ensure divisor is at least 1\n    max_core_k = graph.graph['precomputed'].get('max_core_k', 0)\n    core_norm_divisor = max_core_k + 1 # Add 1 to handle max_core_k=0 and ensure positive divisor\n    \n    # Retrieve graph-level max_eigenvector for normalization\n    # If not precomputed, compute it once for the entire graph and store it.\n    max_eigenvector_val = graph.graph['precomputed'].get('max_eigenvector', None)\n    if max_eigenvector_val is None:\n        max_eigenvector_val = 0.0\n        for n in graph.nodes:\n            max_eigenvector_val = max(max_eigenvector_val, graph.nodes[n].get('eigenvector', 0.0))\n        # Cache the computed max_eigenvector for subsequent calls\n        graph.graph['precomputed']['max_eigenvector'] = max_eigenvector_val\n            \n    eigen_norm_divisor = max_eigenvector_val + epsilon # Add epsilon to handle max_eigenvector_val=0\n\n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0.0 or 0 if not present\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_degree = graph.nodes[node].get('degree', 0)\n        \n        # Term 1: Normalized Eigenvector Centrality\n        # (node_eigenvector + epsilon) ensures a positive numerator even if eigenvector is 0.\n        term_norm_eigenvector = (node_eigenvector + epsilon) / eigen_norm_divisor\n        \n        # Term 2: Normalized Core Number\n        # (node_core_number + 1) ensures a positive contribution even for core_number 0.\n        term_norm_core = (node_core_number + 1) / core_norm_divisor\n        \n        # Term 3: Bridging Bonus Term\n        # This term rewards nodes that have high degree but low clustering, indicating\n        # a role as a non-redundant connector. The '1.0 +' ensures the multiplier\n        # is always >= 1, so it acts as a bonus.\n        term_bridging_bonus = (1.0 + node_degree * (1.0 - node_clustering))\n        \n        # Combine terms: additive sum of normalized influence and robustness,\n        # multiplied by the bridging bonus.\n        # This prioritizes nodes that are both influential AND robust, then enhances\n        # their score if they also serve as efficient bridges.\n        current_score = (term_norm_eigenvector + term_norm_core) * term_bridging_bonus\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback to ensure a node is always returned if unvisited_nodes is not empty\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+          "objective": 0.26828,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "68f5ce761c3f0634173bffb634ec9c57"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.4,
+               "fht_10": 197.0,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.27508187240726567,
+                         "metrics": {
+                              "time_select": 0.1452329158782959,
+                              "time_anc": 0.057799577713012695,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 193.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.27186662089616026,
+                         "metrics": {
+                              "time_select": 0.1677699089050293,
+                              "time_anc": 0.06419038772583008,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 133.0,
+                              "fht_10": 202.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.26572581057719874,
+                         "metrics": {
+                              "time_select": 0.18049240112304688,
+                              "time_anc": 0.06949806213378906,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 211.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.25422148011211165,
+                         "metrics": {
+                              "time_select": 0.12354207038879395,
+                              "time_anc": 0.0475313663482666,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 118.0,
+                              "fht_10": 166.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.27448482126407,
+                         "metrics": {
+                              "time_select": 0.16542887687683105,
+                              "time_anc": 0.06973433494567871,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 136.0,
+                              "fht_10": 213.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.847435712814331,
+          "time_select": 0.7824661731719971,
+          "time_anc": 0.30875372886657715,
+          "unique_id": "8ec30788df2f7a6dc624e294aba1e36f"
+     },
+     {
+          "algorithm": "The algorithm selects the unvisited node with the highest 'Robust Bridging Score,' computed as the product of its normalized core number, the square root of its betweenness centrality, and a bridging efficiency term derived from its degree multiplied by the complement of its clustering coefficient, prioritizing nodes that are structurally robust, globally central, and act as non-redundant connectors.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm selects the unvisited node with the highest 'Robust Bridging Score,' computed as the product of its normalized core number, the square root of its betweenness centrality, and a bridging efficiency term derived from its degree multiplied by the complement of its clustering coefficient, prioritizing nodes that are structurally robust, globally central, and act as non-redundant connectors.}\n    \"\"\"\n    max_score = -float('inf')\n    next_node = None\n    \n    epsilon = 1e-9 # Small value for numerical stability\n    \n    # Retrieve graph-level max_core_k for normalization\n    # Default to 0 if not found, then ensure divisor is at least 1\n    max_core_k = graph.graph['precomputed'].get('max_core_k', 0)\n    core_norm_divisor = max_core_k + 1 # Add 1 to handle max_core_k=0 and ensure positive divisor\n    \n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0 if not present\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_degree = graph.nodes[node].get('degree', 0)\n        \n        # Term 1: Normalized Core Number\n        # (node_core_number + 1) ensures a positive contribution even for core_number 0.\n        term_core_normalized = (node_core_number + 1) / core_norm_divisor\n        \n        # Term 2: Square Root of Betweenness Centrality\n        # Uses square root to moderate the impact of high betweenness while keeping it positive.\n        # Adding epsilon prevents issues with very small or zero betweenness.\n        term_sqrt_betweenness = math.sqrt(node_betweenness + epsilon)\n        \n        # Term 3: Bridging Efficiency (Degree * (1 - Clustering Coefficient))\n        # This term identifies nodes that are highly connected (high degree) but are not\n        # part of dense cliques (low clustering), indicating a crucial bridging role.\n        # If node_degree is 0, this term becomes 0, effectively zeroing the total score for isolated nodes.\n        term_bridging_efficiency = node_degree * (1.0 - node_clustering)\n        \n        # Combine all terms multiplicatively to form the 'Robust Bridging Score'.\n        # A multiplicative combination ensures that a node must score reasonably well on all\n        # aspects (robustness, global influence, bridging) to achieve a high total score.\n        current_score = term_core_normalized * \\\n                        term_sqrt_betweenness * \\\n                        term_bridging_efficiency\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback to ensure a node is always returned if unvisited_nodes is not empty\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+          "objective": 0.27106,
+          "other_inf": {
+               "operator": "m1",
+               "parent": [
+                    "67d480044503626da9caacdc9c4ab984"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 127.8,
+               "fht_10": 206.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.27332129557893087,
+                         "metrics": {
+                              "time_select": 0.13871383666992188,
+                              "time_anc": 0.05289316177368164,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 113.0,
+                              "fht_10": 202.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.2730992256399932,
+                         "metrics": {
+                              "time_select": 0.16361737251281738,
+                              "time_anc": 0.059999942779541016,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 214.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.26817952531850225,
+                         "metrics": {
+                              "time_select": 0.16019487380981445,
+                              "time_anc": 0.05853128433227539,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 220.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.26109327751993006,
+                         "metrics": {
+                              "time_select": 0.11266183853149414,
+                              "time_anc": 0.043831825256347656,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 166.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2796004268727257,
+                         "metrics": {
+                              "time_select": 0.15470194816589355,
+                              "time_anc": 0.06116819381713867,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 138.0,
+                              "fht_10": 231.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.6675598621368408,
+          "time_select": 0.7298898696899414,
+          "time_anc": 0.2764244079589844,
+          "unique_id": "68f5ce761c3f0634173bffb634ec9c57"
+     },
+     {
+          "algorithm": "This algorithm selects the unvisited node with the highest \"Global Leverage and Local Fragility Score\", which is calculated as the product of its eigenvector centrality, the natural logarithm of one plus its betweenness centrality (for stability and positive contribution), and a term representing its local structural fragility derived from the inverse of its clustering coefficient multiplied by its core number (plus one), thereby identifying influential nodes that control significant information flow and are critical for the network's structural integrity where local redundancy is low.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list) -> int:\n    \"\"\"\n    {This algorithm selects the unvisited node with the highest \"Global Leverage and Local Fragility Score\", which is calculated as the product of its eigenvector centrality, the natural logarithm of one plus its betweenness centrality (for stability and positive contribution), and a term representing its local structural fragility derived from the inverse of its clustering coefficient multiplied by its core number (plus one), thereby identifying influential nodes that control significant information flow and are critical for the network's structural integrity where local redundancy is low.}\n    \"\"\"\n    best_node = None\n    max_score = -float('inf')\n    \n    epsilon = 1e-9 # Small value for numerical stability, especially for division by zero or log argument\n\n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0.0 or 0 if not present\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n\n        # Term 1: Global Influence (Eigenvector Centrality)\n        # Directly uses eigenvector centrality. If 0, the entire score will be 0, which is appropriate for uninfluential nodes.\n        term_eigenvector = node_eigenvector\n\n        # Term 2: Global Path Control (Logarithm of (1 + Betweenness Centrality))\n        # Using log(1 + betweenness) ensures the term is always non-negative and scales the contribution\n        # of betweenness, giving a smoother reward for increasing centrality, and log(1)=0 for isolated nodes.\n        term_log_betweenness = math.log(1.0 + node_betweenness)\n\n        # Term 3: Local Structural Fragility (Inverse Clustering * (Core Number + 1))\n        # This term is high for nodes that are deeply embedded (high core_number) but are not\n        # part of dense cliques (low clustering coefficient, thus high inverse clustering).\n        # It identifies critical connectors within the robust core that lack local redundancy.\n        term_inverse_clustering = 1.0 / (node_clustering + epsilon)\n        term_core_depth = node_core_number + 1\n        term_local_fragility = term_inverse_clustering * term_core_depth\n        \n        # Combine all terms multiplicatively to form the 'Global Leverage and Local Fragility Score'.\n        # This score prioritizes nodes that are influential (eigenvector), control significant paths (betweenness),\n        # are deep in the network's core, and connect structures with low local redundancy.\n        current_score = term_eigenvector * term_log_betweenness * term_local_fragility\n        \n        if current_score > max_score:\n            max_score = current_score\n            best_node = node\n            \n    # Fallback: if no node was selected (e.g., unvisited_nodes was empty, or all remaining nodes had a score of 0,\n    # which can happen if they are isolated with zero eigenvector and betweenness), return the first unvisited node\n    # to ensure a node is always returned if candidates exist.\n    if best_node is None and unvisited_nodes:\n        best_node = unvisited_nodes[0]\n\n    return best_node",
+          "objective": 0.27129,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "38b1d129a8a4aa8f42bd0192eb573638",
+                    "895ee394a75f84e1741fac59ba66b072",
+                    "67d480044503626da9caacdc9c4ab984",
+                    "38b1d129a8a4aa8f42bd0192eb573638",
+                    "8a6f2062e78f851db333fb2ca8abfe6c"
+               ],
+               "anc_prefix_k": 0.8561938465713432,
+               "fht_50": 128.4,
+               "fht_10": 201.8,
+               "lcc_at_k_frac": 0.8485166717322882,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.27952850890204045,
+                         "metrics": {
+                              "time_select": 0.13344240188598633,
+                              "time_anc": 0.05046415328979492,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 201.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.27252785689067466,
+                         "metrics": {
+                              "time_select": 0.16988778114318848,
+                              "time_anc": 0.05377078056335449,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 209.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27069013079850696,
+                         "metrics": {
+                              "time_select": 0.15489554405212402,
+                              "time_anc": 0.05560445785522461,
+                              "anc_prefix_k": 0.8560380036422317,
+                              "fht_50": 132.0,
+                              "fht_10": 212.0,
+                              "lcc_at_k_frac": 0.8382978723404255,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.25035615952199836,
+                         "metrics": {
+                              "time_select": 0.12079524993896484,
+                              "time_anc": 0.04428577423095703,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 110.0,
+                              "fht_10": 154.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.28332373761656204,
+                         "metrics": {
+                              "time_select": 0.16008472442626953,
+                              "time_anc": 0.05844378471374512,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 136.0,
+                              "fht_10": 233.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.6777541637420654,
+          "time_select": 0.7391057014465332,
+          "time_anc": 0.26256895065307617,
+          "unique_id": "6d74393eb7101d0712d7ead672f17cf3"
+     },
+     {
+          "algorithm": "The algorithm iteratively selects the unvisited node with the highest \"High Impact Centrality Score,\" calculated as the product of its degree, its betweenness centrality (with a small offset for numerical stability), and its eigenvector centrality (with a small offset for numerical stability), prioritizing nodes that are simultaneously locally connected, globally central, and influential.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm iteratively selects the unvisited node with the highest \"High Impact Centrality Score,\" calculated as the product of its degree, its betweenness centrality (with a small offset for numerical stability), and its eigenvector centrality (with a small offset for numerical stability), prioritizing nodes that are simultaneously locally connected, globally central, and influential.}\n    \"\"\"\n    max_score = -float('inf')\n    next_node = None\n    \n    epsilon = 1e-9 # Small value for numerical stability\n    \n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to appropriate values if not present\n        node_degree = graph.nodes[node].get('degree', 0)\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        \n        # Term 1: Degree\n        # A node with degree 0 is isolated; its removal has no impact on connectivity,\n        # so its score contribution from degree should be 0.\n        term_degree = node_degree\n        \n        # Term 2: Betweenness Centrality\n        # Adding epsilon prevents the entire score from becoming zero if betweenness is exactly 0,\n        # allowing other centrality measures to still contribute.\n        term_betweenness = node_betweenness + epsilon\n        \n        # Term 3: Eigenvector Centrality\n        # Similar to betweenness, epsilon ensures nodes with zero eigenvector centrality\n        # due to graph structure (e.g., in a leaf component) still have a minimal score.\n        term_eigenvector = node_eigenvector + epsilon\n        \n        # Combine all terms multiplicatively to form the 'High Impact Centrality Score'.\n        # This multiplicative combination ensures that a node must exhibit reasonable values\n        # across all three centrality measures (local connectivity, global path control, and influence)\n        # to achieve a high overall score, thus selecting nodes with comprehensive importance.\n        current_score = term_degree * term_betweenness * term_eigenvector\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback to ensure a node is always returned if unvisited_nodes is not empty\n    # This handles cases where all remaining nodes might have a score of 0 (e.g., all are isolated)\n    # or if for some unforeseen reason max_score remains -inf.\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+          "objective": 0.2732,
+          "other_inf": {
+               "operator": "m2",
+               "parent": [
+                    "68f5ce761c3f0634173bffb634ec9c57"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 129.2,
+               "fht_10": 208.4,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2864418265493977,
+                         "metrics": {
+                              "time_select": 0.09550023078918457,
+                              "time_anc": 0.05649924278259277,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 128.0,
+                              "fht_10": 221.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.27094968560542604,
+                         "metrics": {
+                              "time_select": 0.12098217010498047,
+                              "time_anc": 0.05586814880371094,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 137.0,
+                              "fht_10": 217.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.27131044640987007,
+                         "metrics": {
+                              "time_select": 0.1110832691192627,
+                              "time_anc": 0.06475663185119629,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 204.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.25910680131310826,
+                         "metrics": {
+                              "time_select": 0.09239959716796875,
+                              "time_anc": 0.05038857460021973,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 173.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.27818816370973765,
+                         "metrics": {
+                              "time_select": 0.1219942569732666,
+                              "time_anc": 0.06380844116210938,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 129.0,
+                              "fht_10": 227.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.5177035331726074,
+          "time_select": 0.5419595241546631,
+          "time_anc": 0.2913210391998291,
+          "unique_id": "895ee394a75f84e1741fac59ba66b072"
+     },
+     {
+          "algorithm": "The algorithm selects the unvisited node with the highest 'Weighted Local-Global Bottleneck Score,' computed as the product of its betweenness centrality (with a small offset), the square root of its eigenvector centrality (with a small offset), its degree-to-clustering-coefficient ratio (with a small offset for stability), and its core number incremented by one, prioritizing nodes that are global bottlenecks, influential, locally non-redundant hubs, and structurally robust.",
+          "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm selects the unvisited node with the highest 'Weighted Local-Global Bottleneck Score,' computed as the product of its betweenness centrality (with a small offset), the square root of its eigenvector centrality (with a small offset), its degree-to-clustering-coefficient ratio (with a small offset for stability), and its core number incremented by one, prioritizing nodes that are global bottlenecks, influential, locally non-redundant hubs, and structurally robust.}\n    \"\"\"\n    max_score = -float('inf')\n    next_node = None\n    \n    epsilon = 1e-9 # Small value for numerical stability to prevent division by zero or log(0) issues\n    \n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to appropriate values if not present\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_degree = graph.nodes[node].get('degree', 0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        \n        # Term 1: Betweenness Centrality (Global Bottleneck)\n        # Adding epsilon ensures a positive contribution even if betweenness is very small,\n        # and allows differentiation among nodes with near-zero betweenness.\n        term_betweenness = node_betweenness + epsilon\n        \n        # Term 2: Square Root of Eigenvector Centrality (Dampened Influence)\n        # Using sqrt applies a non-linear, softer scaling to influence, preventing extremely high\n        # eigenvector values from disproportionately dominating the score.\n        # Adding epsilon ensures the argument to sqrt is positive and provides a minimal influence baseline.\n        term_eigenvector_sqrt = math.sqrt(node_eigenvector + epsilon)\n        \n        # Term 3: Degree-to-Clustering-Coefficient Ratio (Local Non-Redundant Hub)\n        # This term highlights nodes that are highly connected (high degree) but are not\n        # embedded in dense cliques (low clustering), thus acting as critical local bridges or hubs.\n        # If a node has no connections (degree 0), its ratio is 0, as it cannot be a hub or bridge.\n        # Adding epsilon to clustering prevents division by zero.\n        term_degree_clustering_ratio = 0.0\n        if node_degree > 0:\n            term_degree_clustering_ratio = node_degree / (node_clustering + epsilon)\n        \n        # Term 4: Core Number (Structural Depth/Robustness)\n        # Incrementing by 1 ensures a positive multiplier for all nodes, including those in the\n        # outermost core (core_number 0), giving credit for structural embedding.\n        term_core_number_plus_one = node_core_number + 1\n        \n        # Combine all terms multiplicatively to form the 'Weighted Local-Global Bottleneck Score'.\n        # A multiplicative combination ensures that a node must demonstrate significance across\n        # all four dimensions (global path control, influence, local non-redundancy, and structural depth)\n        # to achieve a high overall score, promoting comprehensive importance.\n        current_score = term_betweenness * \\\n                        term_eigenvector_sqrt * \\\n                        term_degree_clustering_ratio * \\\n                        term_core_number_plus_one\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback mechanism: If no node was selected (e.g., due to all scores being 0 for isolated nodes\n    # or an empty unvisited_nodes list initially), ensure a node is returned if available.\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+          "objective": 0.27325,
+          "other_inf": {
+               "operator": "e1",
+               "parent": [
+                    "b9d41a71acbf36d9e5a37467b6217abd",
+                    "895ee394a75f84e1741fac59ba66b072",
+                    "67d480044503626da9caacdc9c4ab984",
+                    "90680c35bd57268003313b277a25444a",
+                    "38b1d129a8a4aa8f42bd0192eb573638"
+               ],
+               "anc_prefix_k": 0.8562551293886937,
+               "fht_50": 127.6,
+               "fht_10": 210.6,
+               "lcc_at_k_frac": 0.8510698632216499,
+               "k": 70,
+               "detailed_results": [
+                    {
+                         "instance": "g_0",
+                         "objective": 0.2793550814554127,
+                         "metrics": {
+                              "time_select": 0.16823744773864746,
+                              "time_anc": 0.05091285705566406,
+                              "anc_prefix_k": 0.8563600864946571,
+                              "fht_50": 119.0,
+                              "fht_10": 214.0,
+                              "lcc_at_k_frac": 0.851258581235698,
+                              "k": 65
+                         }
+                    },
+                    {
+                         "instance": "g_1",
+                         "objective": 0.27366684014408166,
+                         "metrics": {
+                              "time_select": 0.18262529373168945,
+                              "time_anc": 0.055097103118896484,
+                              "anc_prefix_k": 0.8557623675396695,
+                              "fht_50": 136.0,
+                              "fht_10": 213.0,
+                              "lcc_at_k_frac": 0.8504273504273504,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_2",
+                         "objective": 0.2758998707555156,
+                         "metrics": {
+                              "time_select": 0.18809795379638672,
+                              "time_anc": 0.05619692802429199,
+                              "anc_prefix_k": 0.8563444177289843,
+                              "fht_50": 132.0,
+                              "fht_10": 223.0,
+                              "lcc_at_k_frac": 0.851063829787234,
+                              "k": 70
+                         }
+                    },
+                    {
+                         "instance": "g_3",
+                         "objective": 0.2583046533309868,
+                         "metrics": {
+                              "time_select": 0.16046905517578125,
+                              "time_anc": 0.04807901382446289,
+                              "anc_prefix_k": 0.8561750849782337,
+                              "fht_50": 120.0,
+                              "fht_10": 170.0,
+                              "lcc_at_k_frac": 0.8512195121951219,
+                              "k": 61
+                         }
+                    },
+                    {
+                         "instance": "g_4",
+                         "objective": 0.2790153039454077,
+                         "metrics": {
+                              "time_select": 0.18389058113098145,
+                              "time_anc": 0.05681896209716797,
+                              "anc_prefix_k": 0.8566336902019244,
+                              "fht_50": 131.0,
+                              "fht_10": 233.0,
+                              "lcc_at_k_frac": 0.851380042462845,
+                              "k": 70
+                         }
+                    }
+               ]
+          },
+          "problem": null,
+          "time": 1.8226451873779297,
+          "time_select": 0.8833203315734863,
+          "time_anc": 0.2671048641204834,
+          "unique_id": "e0ef0d67564a42c68494b79a5a6cf22d"
+     }
+]

@@ -1,0 +1,92 @@
+{
+     "algorithm": "",
+     "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list) -> int:\n    max_score = -float('inf')\n    next_node = None\n    epsilon = 1e-9 # Small value for numerical stability, to avoid division by zero\n\n    precomputed = graph.graph.get('precomputed', {})\n\n    # --- Precompute graph-level maximums for normalization if not already cached ---\n    # Max Betweenness\n    max_betweenness_val = precomputed.get('max_betweenness', 0.0)\n    if max_betweenness_val == 0.0: \n        for n in graph.nodes:\n            max_betweenness_val = max(max_betweenness_val, graph.nodes[n].get('betweenness', 0.0))\n        precomputed['max_betweenness'] = max_betweenness_val \n    betweenness_norm_divisor = max_betweenness_val if max_betweenness_val > epsilon else 1.0\n    \n    # Max Eigenvector\n    max_eigenvector_val = precomputed.get('max_eigenvector', 0.0)\n    if max_eigenvector_val == 0.0:\n        for n in graph.nodes:\n            max_eigenvector_val = max(max_eigenvector_val, graph.nodes[n].get('eigenvector', 0.0))\n        precomputed['max_eigenvector'] = max_eigenvector_val\n    eigenvector_norm_divisor = max_eigenvector_val if max_eigenvector_val > epsilon else 1.0\n\n    # Max Core Number\n    max_core_k_val = precomputed.get('max_core_k', 0)\n    if max_core_k_val == 0:\n        for n in graph.nodes:\n            max_core_k_val = max(max_core_k_val, graph.nodes[n].get('core_number', 0))\n        precomputed['max_core_k'] = max_core_k_val\n    core_number_norm_divisor = float(max_core_k_val) if max_core_k_val > 0 else 1.0\n\n    # --- Calculate Global Structural Fragility (GSF) based on inverse network density ---\n    num_nodes = graph.number_of_nodes()\n    \n    avg_degree_val = precomputed.get('avg_degree', 0.0)\n\n    network_density = 0.0\n    if num_nodes > 1:\n        network_density = avg_degree_val / (num_nodes - 1 + epsilon)\n    \n    # GSF: Inverse of network density, capped to prevent extreme values.\n    # It amplifies scores in sparser networks where individual nodes might have greater relative impact.\n    GSF = 1.0 / (network_density + epsilon)\n    GSF = max(1.0, min(GSF, 100.0)) # Floor at 1.0, cap at 100.0 for robustness\n\n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0.0 or 0 if not present\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        \n        # Normalized Node Metrics\n        norm_betweenness = node_betweenness / betweenness_norm_divisor\n        norm_eigenvector = node_eigenvector / eigenvector_norm_divisor\n        norm_core_number = float(node_core_number) / core_number_norm_divisor\n        \n        # Component 1: Node Centrality Product (NCP)\n        # Multiplies normalized betweenness, eigenvector, and core number.\n        # This term is zero if any of the centralities are zero, emphasizing nodes strong in all three.\n        NCP = norm_betweenness * norm_eigenvector * norm_core_number\n        \n        # Component 2: Local Detachment Potential (LDP)\n        # Emphasizes core nodes that are not tightly clustered, suggesting they act as local bridges within the core.\n        # (norm_core_number + 1.0) ensures a positive contribution even if core_number is 0.\n        # (1.0 / (node_clustering + epsilon)) rewards low clustering.\n        LDP = (norm_core_number + 1.0) * (1.0 / (node_clustering + epsilon))\n\n        # Final Node Disruption Potential Score (CIDS)\n        # Combines NCP and LDP, then amplifies by the Global Structural Fragility (GSF).\n        current_score = (NCP + LDP) * GSF\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback: if no node was selected (e.g., unvisited_nodes was empty or all scores were 0),\n    # return the first unvisited node to ensure a node is always returned if candidates exist.\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+     "objective": 0.26024,
+     "other_inf": {
+          "operator": "e1",
+          "parent": [
+               "103e1172e684f5bec8aa453d06141d37",
+               "654e9a66c12ca6d5ca8032d50a3323fb",
+               "c9a12be44335f8218031f8439f13ade4",
+               "072829869195db0a3c23e248950f4b6f",
+               "654e9a66c12ca6d5ca8032d50a3323fb"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 131.6,
+          "fht_10": 190.0,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.26310841266758267,
+                    "metrics": {
+                         "time_select": 0.12964224815368652,
+                         "time_anc": 0.04960513114929199,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 128.0,
+                         "fht_10": 189.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2611062696990331,
+                    "metrics": {
+                         "time_select": 0.15117955207824707,
+                         "time_anc": 0.054949045181274414,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 136.0,
+                         "fht_10": 183.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.26799172989736697,
+                    "metrics": {
+                         "time_select": 0.15367364883422852,
+                         "time_anc": 0.05627608299255371,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 138.0,
+                         "fht_10": 209.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2447414727233324,
+                    "metrics": {
+                         "time_select": 0.11020803451538086,
+                         "time_anc": 0.039435386657714844,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 118.0,
+                         "fht_10": 174.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.2642320304738097,
+                    "metrics": {
+                         "time_select": 0.15184378623962402,
+                         "time_anc": 0.05200028419494629,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 138.0,
+                         "fht_10": 195.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.564284324645996,
+     "time_select": 0.696547269821167,
+     "time_anc": 0.25226593017578125,
+     "unique_id": "3a06a31b1a0d2216e7447c6ceae7358e"
+}

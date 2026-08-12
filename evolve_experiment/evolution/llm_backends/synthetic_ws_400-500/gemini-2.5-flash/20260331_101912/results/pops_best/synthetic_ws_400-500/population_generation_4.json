@@ -1,0 +1,92 @@
+{
+     "algorithm": "The algorithm selects the unvisited node with the highest 'Logarithmic Impact Score,' \n    computed as the sum of the natural logarithm of its betweenness centrality, \n    the natural logarithm of its eigenvector centrality, its core number incremented by one, \n    and the ratio of its degree to its clustering coefficient, aiming to prioritize nodes \n    that are globally influential, structurally robust, and act as efficient, \n    non-redundant connectors.",
+     "code": "import networkx as nx\nimport math\n\ndef select_next_node(graph: nx.Graph, unvisited_nodes: list):\n    \"\"\"\n    {The algorithm selects the unvisited node with the highest 'Logarithmic Impact Score,' \n    computed as the sum of the natural logarithm of its betweenness centrality, \n    the natural logarithm of its eigenvector centrality, its core number incremented by one, \n    and the ratio of its degree to its clustering coefficient, aiming to prioritize nodes \n    that are globally influential, structurally robust, and act as efficient, \n    non-redundant connectors.}\n    \"\"\"\n    max_score = -float('inf')  # Initialize with negative infinity for additive scores\n    next_node = None\n    \n    epsilon = 1e-9  # Small value to handle logarithms of zero and division by zero\n    \n    for node in unvisited_nodes:\n        # Retrieve precomputed node attributes, defaulting to 0.0 if not present\n        node_betweenness = graph.nodes[node].get('betweenness', 0.0)\n        node_eigenvector = graph.nodes[node].get('eigenvector', 0.0)\n        node_core_number = graph.nodes[node].get('core_number', 0)\n        node_clustering = graph.nodes[node].get('clustering', 0.0)\n        node_degree = graph.nodes[node].get('degree', 0)\n        \n        # Term 1: Logarithm of Betweenness Centrality\n        # Adding epsilon to ensure argument to log is always positive.\n        # Nodes with zero betweenness will have a large negative contribution.\n        term_betweenness = math.log(node_betweenness + epsilon)\n        \n        # Term 2: Logarithm of Eigenvector Centrality\n        # Similar to betweenness, penalizes nodes with zero eigenvector centrality.\n        term_eigenvector = math.log(node_eigenvector + epsilon)\n        \n        # Term 3: Core Number\n        # Adds a linear contribution reflecting structural depth. Increment by 1 to ensure\n        # nodes in the outermost shell (core_number 0) still contribute positively.\n        term_core_number = node_core_number + 1\n        \n        # Term 4: Degree to Clustering Ratio\n        # This term highlights nodes that are highly connected (high degree) but are not\n        # part of dense cliques (low clustering), thus acting as critical bridges.\n        # Isolated nodes (degree 0) have no bridging capability, so their ratio is 0.\n        if node_degree == 0:\n            term_degree_clustering_ratio = 0.0\n        else:\n            term_degree_clustering_ratio = node_degree / (node_clustering + epsilon)\n        \n        # Combine all terms additively to form the Logarithmic Impact Score\n        current_score = term_betweenness + \\\n                        term_eigenvector + \\\n                        term_core_number + \\\n                        term_degree_clustering_ratio\n        \n        if current_score > max_score:\n            max_score = current_score\n            next_node = node\n            \n    # Fallback: if no node was selected (e.g., unvisited_nodes was empty or an unforeseen\n    # error occurred where max_score remained -inf), return the first unvisited node\n    # to ensure a node is always returned if candidates exist.\n    if next_node is None and unvisited_nodes:\n        next_node = unvisited_nodes[0]\n\n    return next_node",
+     "objective": 0.26336,
+     "other_inf": {
+          "operator": "e2",
+          "parent": [
+               "bf9fb38832a3f6cf603494c81e0ff603",
+               "90680c35bd57268003313b277a25444a",
+               "8a6f2062e78f851db333fb2ca8abfe6c",
+               "bf9fb38832a3f6cf603494c81e0ff603",
+               "69219c9371c33628c2a3d38a0775a023"
+          ],
+          "anc_prefix_k": 0.8562551293886937,
+          "fht_50": 124.6,
+          "fht_10": 198.8,
+          "lcc_at_k_frac": 0.8510698632216499,
+          "k": 70,
+          "detailed_results": [
+               {
+                    "instance": "g_0",
+                    "objective": 0.2714849102988568,
+                    "metrics": {
+                         "time_select": 0.19010162353515625,
+                         "time_anc": 0.045760154724121094,
+                         "anc_prefix_k": 0.8563600864946571,
+                         "fht_50": 128.0,
+                         "fht_10": 201.0,
+                         "lcc_at_k_frac": 0.851258581235698,
+                         "k": 65
+                    }
+               },
+               {
+                    "instance": "g_1",
+                    "objective": 0.2695611232576587,
+                    "metrics": {
+                         "time_select": 0.2300562858581543,
+                         "time_anc": 0.05889272689819336,
+                         "anc_prefix_k": 0.8557623675396695,
+                         "fht_50": 136.0,
+                         "fht_10": 198.0,
+                         "lcc_at_k_frac": 0.8504273504273504,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_2",
+                    "objective": 0.2503692685766022,
+                    "metrics": {
+                         "time_select": 0.21668601036071777,
+                         "time_anc": 0.0565340518951416,
+                         "anc_prefix_k": 0.8563444177289843,
+                         "fht_50": 102.0,
+                         "fht_10": 215.0,
+                         "lcc_at_k_frac": 0.851063829787234,
+                         "k": 70
+                    }
+               },
+               {
+                    "instance": "g_3",
+                    "objective": 0.2464784758170201,
+                    "metrics": {
+                         "time_select": 0.16818666458129883,
+                         "time_anc": 0.04043936729431152,
+                         "anc_prefix_k": 0.8561750849782337,
+                         "fht_50": 119.0,
+                         "fht_10": 160.0,
+                         "lcc_at_k_frac": 0.8512195121951219,
+                         "k": 61
+                    }
+               },
+               {
+                    "instance": "g_4",
+                    "objective": 0.27891089717602036,
+                    "metrics": {
+                         "time_select": 0.21616244316101074,
+                         "time_anc": 0.055692195892333984,
+                         "anc_prefix_k": 0.8566336902019244,
+                         "fht_50": 138.0,
+                         "fht_10": 220.0,
+                         "lcc_at_k_frac": 0.851380042462845,
+                         "k": 70
+                    }
+               }
+          ]
+     },
+     "problem": null,
+     "time": 1.9726572036743164,
+     "time_select": 1.021193027496338,
+     "time_anc": 0.25731849670410156,
+     "unique_id": "67d480044503626da9caacdc9c4ab984"
+}
