@@ -1,0 +1,18 @@
+﻿{
+    "runner":  {
+                   "name":  "gpt-5.1-codex-ca",
+                   "model":  "gpt-5.1-codex-ca",
+                   "api_endpoint":  "api.chatanywhere.tech"
+               },
+    "params":  {
+                   "num_instance":  5,
+                   "pop_size":  6,
+                   "timeout":  600,
+                   "new_run":  true,
+                   "failure_stop_patience":  30,
+                   "n_pop":  30,
+                   "n_proc":  1
+               },
+    "dataset":  "synthetic_ws_400-500",
+    "started_at":  "2026-03-31T01:47:52"
+}
